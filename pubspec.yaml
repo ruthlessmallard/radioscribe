@@ -4,14 +4,15 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   permission_handler: ^11.3.0
   record: ^5.1.2
-  vosk_flutter: ^0.3.46
+  sherpa_onnx: ^1.12.28
+  path: ^1.9.0
   shared_preferences: ^2.3.2
   path_provider: ^2.1.4
   intl: ^0.19.0
@@ -27,5 +28,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/models/
-    - assets/sounds/
+    - assets/models/encoder.onnx
+    - assets/models/decoder.onnx
+    - assets/models/joiner.onnx
+    - assets/models/tokens.txt
+    - assets/sounds/alarm.mp3

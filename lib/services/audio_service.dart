@@ -1,20 +1,24 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
-import 'package:vosk_flutter/vosk_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'dart:io';
 
-/// AudioService — wraps Vosk offline STT with the record package.
+/// AudioService — wraps sherpa_onnx offline STT with the record package.
 ///
 /// Lifecycle:
-///   1. On first [startListening], loads the Vosk model from assets (cached).
+///   1. On first [startListening], loads the sherpa_onnx model from assets
+///      (extracts to app support dir, cached after first load).
 ///   2. Streams mic audio (PCM 16-bit, 16kHz, mono) through the recognizer.
 ///   3. Partial results update [partialText] and call notifyListeners().
-///   4. Silence > [silenceThresholdSeconds] (default 3s) or 60s max triggers
-///      a final-result flush → emitted on [segmentStream].
+///   4. Endpoint detection or 60s max triggers a segment flush →
+///      emitted on [segmentStream].
 ///   5. [stopListening] flushes any remaining text and stops the recorder.
 class AudioService extends ChangeNotifier {
   // ── Public state ──────────────────────────────────────────────────────────
@@ -30,30 +34,26 @@ class AudioService extends ChangeNotifier {
   bool get modelLoaded => _modelLoaded;
   bool get modelError => _modelError;
 
-  /// Emits completed transcript segments (after silence or max-duration flush).
+  /// Emits completed transcript segments (after endpoint or max-duration flush).
   Stream<String> get segmentStream => _segmentController.stream;
 
   // ── Configuration ─────────────────────────────────────────────────────────
-  static const String _modelAssetPath =
-      'assets/models/vosk-model-small-en-us-0.15';
   static const int _sampleRate = 16000;
-  static const double _silenceThresholdSeconds = 3.0;
   static const Duration _maxSegmentDuration = Duration(seconds: 60);
 
   // ── Internals ─────────────────────────────────────────────────────────────
   final StreamController<String> _segmentController =
       StreamController<String>.broadcast();
 
-  // Vosk objects (cached after first load)
-  Model? _model;
-  Recognizer? _recognizer;
+  // sherpa_onnx objects (cached after first load)
+  sherpa_onnx.OnlineRecognizer? _recognizer;
+  sherpa_onnx.OnlineStream? _onlineStream;
 
   // Record package
   AudioRecorder? _recorder;
   StreamSubscription<Uint8List>? _audioSub;
 
   // Timers
-  Timer? _silenceTimer;
   Timer? _maxSegmentTimer;
 
   // ── Permission ────────────────────────────────────────────────────────────
@@ -67,17 +67,60 @@ class AudioService extends ChangeNotifier {
 
   // ── Model loading ─────────────────────────────────────────────────────────
 
+  Future<String> _copyAssetFile(String assetPath, String filename) async {
+    final directory = await getApplicationSupportDirectory();
+    final target = p.join(directory.path, filename);
+    final data = await rootBundle.load(assetPath);
+    final exists = await File(target).exists();
+    if (!exists || File(target).lengthSync() != data.lengthInBytes) {
+      final bytes =
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      await File(target).writeAsBytes(bytes);
+    }
+    return target;
+  }
+
   Future<void> _ensureModelLoaded() async {
     if (_modelLoaded || _modelError) return;
     try {
-      debugPrint('[AudioService] Loading Vosk model from assets...');
-      final modelPath =
-          await ModelLoader().loadFromAssets(_modelAssetPath);
-      _model = await VoskFlutterPlugin.instance().createModel(modelPath);
-      _recognizer = await VoskFlutterPlugin.instance()
-          .createRecognizer(model: _model!, sampleRate: _sampleRate.toDouble());
+      debugPrint('[AudioService] Initializing sherpa_onnx bindings...');
+      sherpa_onnx.initBindings();
+
+      debugPrint('[AudioService] Extracting model files from assets...');
+      final encoderPath = await _copyAssetFile(
+          'assets/models/encoder.onnx', 'encoder.onnx');
+      final decoderPath = await _copyAssetFile(
+          'assets/models/decoder.onnx', 'decoder.onnx');
+      final joinerPath = await _copyAssetFile(
+          'assets/models/joiner.onnx', 'joiner.onnx');
+      final tokensPath = await _copyAssetFile(
+          'assets/models/tokens.txt', 'tokens.txt');
+
+      debugPrint('[AudioService] Creating OnlineRecognizer...');
+      final config = sherpa_onnx.OnlineRecognizerConfig(
+        model: sherpa_onnx.OnlineModelConfig(
+          zipformer2: sherpa_onnx.OnlineZipformer2TransducerModelConfig(
+            encoder: encoderPath,
+            decoder: decoderPath,
+            joiner: joinerPath,
+          ),
+          tokens: tokensPath,
+          numThreads: 2,
+          debug: false,
+        ),
+        enableEndpoint: true,
+        rule1MinTrailingSilence: 2.4,
+        rule2MinTrailingSilence: 1.2,
+        rule3MinUtteranceLength: 20.0,
+        decodingMethod: 'greedy_search',
+        maxActivePaths: 4,
+      );
+
+      _recognizer = sherpa_onnx.OnlineRecognizer(config);
+      _onlineStream = _recognizer!.createStream();
+
       _modelLoaded = true;
-      debugPrint('[AudioService] Vosk model loaded.');
+      debugPrint('[AudioService] sherpa_onnx model loaded successfully.');
     } catch (e, st) {
       debugPrint('[AudioService] Model load failed: $e\n$st');
       _modelError = true;
@@ -141,8 +184,6 @@ class AudioService extends ChangeNotifier {
     if (!_isListening) return;
 
     _isListening = false;
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
     _maxSegmentTimer?.cancel();
     _maxSegmentTimer = null;
 
@@ -155,7 +196,15 @@ class AudioService extends ChangeNotifier {
     _recorder = null;
 
     // Flush any remaining recognition
-    await _flushFinalResult();
+    if (_recognizer != null && _onlineStream != null) {
+      final text = _recognizer!.getResult(_onlineStream!).text.trim();
+      if (text.isNotEmpty) {
+        _segmentController.add(text);
+      }
+      // Free old stream and create a fresh one for next session
+      _onlineStream!.free();
+      _onlineStream = _recognizer!.createStream();
+    }
 
     _partialText = '';
     notifyListeners();
@@ -167,59 +216,52 @@ class AudioService extends ChangeNotifier {
 
   // ── Audio processing ──────────────────────────────────────────────────────
 
-  Future<void> _onAudioChunk(Uint8List data) async {
-    if (_recognizer == null) return;
+  void _onAudioChunk(Uint8List data) {
+    if (_recognizer == null || _onlineStream == null) return;
 
     try {
-      final isFinal = await _recognizer!.acceptWaveformBytes(data);
+      final samplesFloat32 =
+          _convertBytesToFloat32(data);
+      _onlineStream!.acceptWaveform(
+          samples: samplesFloat32, sampleRate: _sampleRate);
 
-      if (isFinal) {
-        // Recognizer detected an end-of-utterance
-        final json = await _recognizer!.getResult();
-        final text = _parseTextField(json, 'text');
-        _emitSegment(text);
-        _cancelSilenceTimer();
-      } else {
-        // Partial result available
-        final json = await _recognizer!.getPartialResult();
-        final partial = _parseTextField(json, 'partial');
-        if (partial != _partialText) {
-          _partialText = partial;
-          notifyListeners();
-          if (partial.isNotEmpty) {
-            _resetSilenceTimer();
-          }
+      while (_recognizer!.isReady(_onlineStream!)) {
+        _recognizer!.decode(_onlineStream!);
+      }
+
+      final text = _recognizer!.getResult(_onlineStream!).text.trim();
+
+      if (_recognizer!.isEndpoint(_onlineStream!)) {
+        // Endpoint detected — emit segment and reset stream
+        if (text.isNotEmpty) {
+          _segmentController.add(text);
         }
+        _recognizer!.reset(_onlineStream!);
+        _partialText = '';
+        _resetMaxSegmentTimer();
+        notifyListeners();
+      } else if (text != _partialText) {
+        _partialText = text;
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('[AudioService] Recognizer error: $e');
     }
   }
 
-  // ── Silence / max-segment timers ──────────────────────────────────────────
+  // ── Max-segment timer ─────────────────────────────────────────────────────
 
-  void _resetSilenceTimer() {
-    _silenceTimer?.cancel();
-    _silenceTimer = Timer(
-      Duration(milliseconds: (_silenceThresholdSeconds * 1000).round()),
-      _onSilenceTimeout,
-    );
-  }
-
-  void _cancelSilenceTimer() {
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
-  }
-
-  Future<void> _onSilenceTimeout() async {
-    debugPrint('[AudioService] Silence threshold reached — flushing.');
-    await _flushFinalResult();
-    _resetMaxSegmentTimer();
-  }
-
-  Future<void> _onMaxSegmentTimeout() async {
+  void _onMaxSegmentTimeout() {
     debugPrint('[AudioService] Max segment duration reached — flushing.');
-    await _flushFinalResult();
+    if (_recognizer != null && _onlineStream != null) {
+      final text = _recognizer!.getResult(_onlineStream!).text.trim();
+      if (text.isNotEmpty) {
+        _segmentController.add(text);
+      }
+      _recognizer!.reset(_onlineStream!);
+      _partialText = '';
+      notifyListeners();
+    }
     _resetMaxSegmentTimer();
   }
 
@@ -228,45 +270,28 @@ class AudioService extends ChangeNotifier {
     _maxSegmentTimer = Timer(_maxSegmentDuration, _onMaxSegmentTimeout);
   }
 
-  // ── Result helpers ────────────────────────────────────────────────────────
+  // ── PCM helpers ───────────────────────────────────────────────────────────
 
-  Future<void> _flushFinalResult() async {
-    if (_recognizer == null) return;
-    try {
-      final json = await _recognizer!.getFinalResult();
-      final text = _parseTextField(json, 'text');
-      _emitSegment(text);
-    } catch (e) {
-      debugPrint('[AudioService] getFinalResult error: $e');
+  Float32List _convertBytesToFloat32(Uint8List bytes,
+      [Endian endian = Endian.little]) {
+    final values = Float32List(bytes.length ~/ 2);
+    final data = ByteData.view(bytes.buffer);
+    for (var i = 0; i < bytes.length; i += 2) {
+      final short = data.getInt16(i, endian);
+      values[i ~/ 2] = short / 32768.0;
     }
-  }
-
-  void _emitSegment(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isNotEmpty) {
-      _segmentController.add(trimmed);
-    }
-    _partialText = '';
-    notifyListeners();
-  }
-
-  String _parseTextField(String jsonStr, String field) {
-    try {
-      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-      return (map[field] as String? ?? '').trim();
-    } catch (_) {
-      return '';
-    }
+    return values;
   }
 
   // ── Dispose ───────────────────────────────────────────────────────────────
 
   @override
   void dispose() {
-    _silenceTimer?.cancel();
     _maxSegmentTimer?.cancel();
     _audioSub?.cancel();
     _recorder?.stop().catchError((_) {});
+    _onlineStream?.free();
+    _recognizer?.free();
     _segmentController.close();
     super.dispose();
   }
