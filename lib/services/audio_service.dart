@@ -80,9 +80,28 @@ class AudioService extends ChangeNotifier {
     return target;
   }
 
+  /// Returns true if the bundled model asset has real content (not a placeholder).
+  Future<bool> _modelAssetsPresent() async {
+    try {
+      final data = await rootBundle.load('assets/models/encoder.onnx');
+      return data.lengthInBytes > 1024; // real encoder is tens of MB
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _ensureModelLoaded() async {
     if (_modelLoaded || _modelError) return;
     try {
+      // Guard against empty placeholder files — sherpa_onnx C++ will hard-crash
+      // if fed a 0-byte ONNX file, which can't be caught in Dart.
+      if (!await _modelAssetsPresent()) {
+        debugPrint('[AudioService] Model assets are placeholders — STT unavailable.');
+        _modelError = true;
+        notifyListeners();
+        return;
+      }
+
       debugPrint('[AudioService] Initializing sherpa_onnx bindings...');
       sherpa_onnx.initBindings();
 
@@ -125,6 +144,7 @@ class AudioService extends ChangeNotifier {
     } catch (e, st) {
       debugPrint('[AudioService] Model load failed: $e\n$st');
       _modelError = true;
+      // Rethrow is intentionally suppressed — UI reads modelError flag
     }
     notifyListeners();
   }
