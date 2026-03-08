@@ -31,17 +31,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
+    // Capture messenger before async gap (use_build_context_synchronously)
+    final messenger = ScaffoldMessenger.of(context);
     await _settingsService.saveConfig(_config);
+    if (!mounted) return;
     setState(() => _dirty = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings saved'),
-          backgroundColor: AppColors.grey,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Settings saved'),
+        backgroundColor: AppColors.grey,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _updateConfig(KeywordConfig updated) {
