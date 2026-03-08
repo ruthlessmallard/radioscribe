@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple "R" lettermark for RadioScribe -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M30,20 L30,88 L44,88 L44,60 L58,60 L70,88 L86,88 L72,58 C80,54 86,46 86,36 C86,26 78,20 66,20 Z M44,32 L64,32 C70,32 72,36 72,40 C72,44 70,48 64,48 L44,48 Z"/>
+</vector>
