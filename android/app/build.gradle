@@ -5,23 +5,23 @@ plugins {
 }
 
 android {
-    namespace "com.example.audio_check"
-    compileSdk 34
-    ndkVersion "25.1.8937393"
+    namespace "com.ruthlessmallard.radioscribe"
+    compileSdk 35
+    ndkVersion "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     defaultConfig {
-        applicationId "com.example.audio_check"
+        applicationId "com.ruthlessmallard.radioscribe"
         minSdk 23
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0.0"
     }
