@@ -10,3 +10,10 @@ build/
 .gradle/
 local.properties
 GeneratedPluginRegistrant.java
+
+# Vosk model files — too large for git (40MB+)
+assets/models/vosk-model-*/
+assets/models/*.zip
+assets/models/*.tar.gz
+# Keep the placeholder so the directory is tracked
+!assets/models/.gitkeep
