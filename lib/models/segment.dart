@@ -29,9 +29,9 @@ class TranscriptSegment {
   Color get backgroundColor {
     switch (alert) {
       case SegmentAlert.safety:
-        return AppColors.snaponRed.withOpacity(0.15);
+        return AppColors.snaponRed.withValues(alpha: 0.15);
       case SegmentAlert.warning:
-        return AppColors.catYellow.withOpacity(0.12);
+        return AppColors.catYellow.withValues(alpha: 0.12);
       case SegmentAlert.none:
         return Colors.transparent;
     }

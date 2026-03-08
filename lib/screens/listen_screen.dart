@@ -160,7 +160,7 @@ class _ListenScreenState extends State<ListenScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.snaponRed.withOpacity(0.15),
+                  color: AppColors.snaponRed.withValues(alpha: 0.15),
                   border: Border.all(color: AppColors.snaponRed, width: 1),
                   borderRadius: BorderRadius.circular(2),
                 ),

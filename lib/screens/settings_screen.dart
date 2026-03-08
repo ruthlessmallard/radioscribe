@@ -308,7 +308,7 @@ class _KeywordListEditorState extends State<_KeywordListEditor> {
                         horizontal: 10, vertical: 10),
                     enabledBorder: OutlineInputBorder(
                       borderSide:
-                          BorderSide(color: widget.accentColor.withOpacity(0.3)),
+                          BorderSide(color: widget.accentColor.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -379,7 +379,7 @@ class _SliderSetting extends StatelessWidget {
                 activeTrackColor: AppColors.catYellow,
                 thumbColor: AppColors.catYellow,
                 inactiveTrackColor: AppColors.grey,
-                overlayColor: AppColors.catYellow.withOpacity(0.1),
+                overlayColor: AppColors.catYellow.withValues(alpha: 0.1),
               ),
               child: Slider(
                 value: value,

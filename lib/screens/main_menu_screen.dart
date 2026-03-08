@@ -120,7 +120,7 @@ class _MenuButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.4), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
           borderRadius: BorderRadius.circular(4),
           color: AppColors.surface,
         ),
@@ -151,7 +151,7 @@ class _MenuButton extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            Icon(Icons.chevron_right, color: color.withOpacity(0.6)),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.6)),
           ],
         ),
       ),

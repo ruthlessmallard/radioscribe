@@ -75,7 +75,7 @@ class SegmentCard extends StatelessWidget {
                       child: Text(
                         segment.matchedKeywords.join(', '),
                         style: TextStyle(
-                          color: segment.borderColor.withOpacity(0.7),
+                          color: segment.borderColor.withValues(alpha: 0.7),
                           fontSize: 11,
                           letterSpacing: 0.5,
                         ),

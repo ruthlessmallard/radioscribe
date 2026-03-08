@@ -10,8 +10,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  bool _accepted = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,7 +115,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    setState(() => _accepted = true);
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                           builder: (_) => const MainMenuScreen()),
