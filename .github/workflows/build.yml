@@ -54,20 +54,19 @@ jobs:
 
       - name: Download STT model (sherpa-onnx streaming zipformer)
         run: |
-          mkdir -p assets/models assets/sounds
+          mkdir -p /tmp/sherpa_model assets/models assets/sounds
           touch assets/sounds/alarm.mp3
-          cd assets/models
           echo "Downloading sherpa-onnx mobile model..."
-          curl -L "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-21-mobile.tar.bz2" -o model.tar.bz2
-          tar xjf model.tar.bz2
-          # Copy and rename to the paths expected by audio_service.dart
-          find . -name "encoder*.onnx" | head -1 | xargs -I{} cp {} encoder.onnx
-          find . -name "decoder*.onnx" | head -1 | xargs -I{} cp {} decoder.onnx
-          find . -name "joiner*.onnx"  | head -1 | xargs -I{} cp {} joiner.onnx
-          find . -name "tokens.txt"    | head -1 | xargs -I{} cp {} tokens.txt
-          rm -rf model.tar.bz2 sherpa-onnx-*
+          curl -L "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-21-mobile.tar.bz2" \
+            -o /tmp/model.tar.bz2
+          tar xjf /tmp/model.tar.bz2 -C /tmp/sherpa_model
+          # Copy and rename from temp dir — avoids same-file collision with placeholders
+          find /tmp/sherpa_model -name "encoder*.onnx" | head -1 | xargs -I{} cp {} assets/models/encoder.onnx
+          find /tmp/sherpa_model -name "decoder*.onnx" | head -1 | xargs -I{} cp {} assets/models/decoder.onnx
+          find /tmp/sherpa_model -name "joiner*.onnx"  | head -1 | xargs -I{} cp {} assets/models/joiner.onnx
+          find /tmp/sherpa_model -name "tokens.txt"    | head -1 | xargs -I{} cp {} assets/models/tokens.txt
           echo "Model files ready:"
-          ls -lh *.onnx *.txt
+          ls -lh assets/models/*.onnx assets/models/tokens.txt
 
       - name: Write local.properties
         run: |
