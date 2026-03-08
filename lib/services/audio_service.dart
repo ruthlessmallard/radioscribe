@@ -297,9 +297,11 @@ class AudioService extends ChangeNotifier {
 
   Float32List _convertBytesToFloat32(Uint8List bytes,
       [Endian endian = Endian.little]) {
-    final values = Float32List(bytes.length ~/ 2);
-    final data = ByteData.view(bytes.buffer);
-    for (var i = 0; i < bytes.length; i += 2) {
+    // Use offset-aware ByteData view — stream chunks may have non-zero offsetInBytes
+    final values = Float32List(bytes.lengthInBytes ~/ 2);
+    final data = ByteData.view(
+        bytes.buffer, bytes.offsetInBytes, bytes.lengthInBytes);
+    for (var i = 0; i < bytes.lengthInBytes; i += 2) {
       final short = data.getInt16(i, endian);
       values[i ~/ 2] = short / 32768.0;
     }
