@@ -27,12 +27,14 @@ class AudioService extends ChangeNotifier {
   String _partialText = '';
   bool _modelLoaded = false;
   bool _modelError = false;
+  String _modelErrorMessage = '';
 
   bool get isListening => _isListening;
   bool get hasPermission => _hasPermission;
   String get partialText => _partialText;
   bool get modelLoaded => _modelLoaded;
   bool get modelError => _modelError;
+  String get modelErrorMessage => _modelErrorMessage;
 
   /// Emits completed transcript segments (after endpoint or max-duration flush).
   Stream<String> get segmentStream => _segmentController.stream;
@@ -125,8 +127,8 @@ class AudioService extends ChangeNotifier {
           ),
           tokens: tokensPath,
           numThreads: 2,
-          debug: false,
-          modelType: 'zipformer2',
+          debug: true,
+          modelType: '',
         ),
         enableEndpoint: true,
         rule1MinTrailingSilence: 2.4,
@@ -144,7 +146,7 @@ class AudioService extends ChangeNotifier {
     } catch (e, st) {
       debugPrint('[AudioService] Model load failed: $e\n$st');
       _modelError = true;
-      // Rethrow is intentionally suppressed — UI reads modelError flag
+      _modelErrorMessage = e.toString();
     }
     notifyListeners();
   }

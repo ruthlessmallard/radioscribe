@@ -267,7 +267,7 @@ class _ListenScreenState extends State<ListenScreen> {
                   builder: (context, _) {
                     String statusText;
                     if (_audioService.modelError) {
-                      statusText = 'STT model failed to load';
+                      statusText = 'STT error: ${_audioService.modelErrorMessage}';
                     } else if (_audioService.isListening &&
                         !_audioService.modelLoaded) {
                       statusText = 'Loading speech model...';
