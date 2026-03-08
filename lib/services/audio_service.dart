@@ -99,7 +99,7 @@ class AudioService extends ChangeNotifier {
       debugPrint('[AudioService] Creating OnlineRecognizer...');
       final config = sherpa_onnx.OnlineRecognizerConfig(
         model: sherpa_onnx.OnlineModelConfig(
-          zipformer2: sherpa_onnx.OnlineZipformer2TransducerModelConfig(
+          transducer: sherpa_onnx.OnlineTransducerModelConfig(
             encoder: encoderPath,
             decoder: decoderPath,
             joiner: joinerPath,
@@ -107,6 +107,7 @@ class AudioService extends ChangeNotifier {
           tokens: tokensPath,
           numThreads: 2,
           debug: false,
+          modelType: 'zipformer2',
         ),
         enableEndpoint: true,
         rule1MinTrailingSilence: 2.4,
