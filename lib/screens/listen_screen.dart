@@ -261,45 +261,66 @@ class _ListenScreenState extends State<ListenScreen> {
                     },
                   ),
                 ),
-                // Bottom bar
-                Container(
-                  color: AppColors.surface,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 14),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _audioService.isListening
-                              ? 'Monitoring radio traffic...'
-                              : 'Tap mic to start monitoring',
-                          style: const TextStyle(
-                            color: AppColors.greyLight,
-                            fontSize: 13,
+                // Bottom bar — rebuilds whenever AudioService notifies
+                ListenableBuilder(
+                  listenable: _audioService,
+                  builder: (context, _) {
+                    String statusText;
+                    if (_audioService.modelError) {
+                      statusText = 'STT model failed to load';
+                    } else if (_audioService.isListening &&
+                        !_audioService.modelLoaded) {
+                      statusText = 'Loading speech model...';
+                    } else if (_audioService.isListening) {
+                      statusText = 'Monitoring radio traffic...';
+                    } else {
+                      statusText = 'Tap mic to start monitoring';
+                    }
+
+                    return Container(
+                      color: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              statusText,
+                              style: TextStyle(
+                                color: _audioService.modelError
+                                    ? AppColors.snaponRed
+                                    : AppColors.greyLight,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
+                          GestureDetector(
+                            onTap: _audioService.modelError
+                                ? null
+                                : _toggleListening,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _audioService.modelError
+                                    ? AppColors.grey
+                                    : (_audioService.isListening
+                                        ? AppColors.snaponRed
+                                        : AppColors.catYellow),
+                              ),
+                              child: Icon(
+                                _audioService.isListening
+                                    ? Icons.mic_off
+                                    : Icons.mic,
+                                color: Colors.black,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      GestureDetector(
-                        onTap: _toggleListening,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _audioService.isListening
-                                ? AppColors.snaponRed
-                                : AppColors.catYellow,
-                          ),
-                          child: Icon(
-                            _audioService.isListening
-                                ? Icons.mic_off
-                                : Icons.mic,
-                            color: Colors.black,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ],
             ),
