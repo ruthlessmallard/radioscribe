@@ -44,11 +44,11 @@ class MainMenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               const Text(
-                'MINE RADIO MONITOR',
+                'MINE RADIO MONITOR BY SHAWN BAIRD',
                 style: TextStyle(
                   color: AppColors.greyLight,
                   fontSize: 12,
-                  letterSpacing: 3,
+                  letterSpacing: 2,
                 ),
               ),
               const SizedBox(height: 48),
@@ -82,7 +82,7 @@ class MainMenuScreen extends StatelessWidget {
               // Version footer
               const Center(
                 child: Text(
-                  'v1.0.0  ·  © Shawn Baird  ·  Non-commercial use only',
+                  'v1.0.0  ·  © 2026 Shawn Baird  ·  All Rights Reserved',
                   style: TextStyle(
                     color: AppColors.greyLight,
                     fontSize: 11,
