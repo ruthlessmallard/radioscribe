@@ -133,8 +133,8 @@ class AudioService extends ChangeNotifier {
         rule1MinTrailingSilence: 2.4,
         rule2MinTrailingSilence: 1.2,
         rule3MinUtteranceLength: 20.0,
-        decodingMethod: 'greedy_search',
-        maxActivePaths: 4,
+        decodingMethod: 'modified_beam_search',
+        maxActivePaths: 8,
       );
 
       _recognizer = sherpa_onnx.OnlineRecognizer(config);
