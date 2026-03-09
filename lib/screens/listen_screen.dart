@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../models/segment.dart';
 import '../models/keyword_config.dart';
 import '../services/keyword_service.dart';
+import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/audio_service.dart';
 import '../services/transcript_log_service.dart';
@@ -65,6 +66,14 @@ class _ListenScreenState extends State<ListenScreen> {
 
     if (_settingsService.config.saveTranscriptLog) {
       _logService.logSegment(segment);
+    }
+
+    if (segment.isPinned) {
+      NotificationService.instance.showAlert(
+        alert: result.alert,
+        keywords: result.matched,
+        text: text,
+      );
     }
 
     setState(() {

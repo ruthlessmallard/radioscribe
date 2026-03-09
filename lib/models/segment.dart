@@ -51,9 +51,9 @@ class TranscriptSegment {
   Color get textColor {
     switch (alert) {
       case SegmentAlert.safety:
-        return AppColors.snaponRed;
+        return Colors.white;
       case SegmentAlert.warning:
-        return AppColors.catYellow;
+        return Colors.white;
       case SegmentAlert.none:
         return confidence < 0.6
             ? AppColors.textFaded

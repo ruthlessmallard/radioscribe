@@ -57,7 +57,7 @@ jobs:
           mkdir -p /tmp/sherpa_model assets/models assets/sounds
           touch assets/sounds/alarm.mp3
           echo "Downloading sherpa-onnx mobile model..."
-          curl -L "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-21-mobile.tar.bz2" \
+          curl -L "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-26-mobile.tar.bz2" \
             -o /tmp/model.tar.bz2
           tar xjf /tmp/model.tar.bz2 -C /tmp/sherpa_model
           # Copy and rename from temp dir — avoids same-file collision with placeholders

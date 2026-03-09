@@ -99,7 +99,8 @@ class _SplashScreenState extends State<SplashScreen> {
                     Text(
                       '© Shawn Baird. All rights reserved.\n'
                       'Non-commercial use only. Unauthorized commercial\n'
-                      'use, distribution, or modification is prohibited.',
+                      'use, distribution, or modification is prohibited.\n'
+                      'Do not share without permission.',
                       style: TextStyle(
                         color: AppColors.greyLight,
                         fontSize: 12,
