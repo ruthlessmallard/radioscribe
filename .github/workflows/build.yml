@@ -2,7 +2,7 @@ name: CI – Analyze & Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, larger-model ]
   pull_request:
     branches: [ main ]
 
