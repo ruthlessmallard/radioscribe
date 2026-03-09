@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../models/keyword_config.dart';
 import '../services/settings_service.dart';
@@ -15,6 +16,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late KeywordConfig _config;
   bool _loaded = false;
   bool _dirty = false;
+  final AudioPlayer _testPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -28,6 +30,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _config = _settingsService.config;
       _loaded = true;
     });
+  }
+
+  @override
+  void dispose() {
+    _testPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _testAlarm() async {
+    try {
+      await _testPlayer.stop();
+      await _testPlayer.play(AssetSource('sounds/alarm.mp3'));
+    } catch (_) {}
+  }
+
+  Future<void> _testChirp() async {
+    try {
+      await _testPlayer.stop();
+      await _testPlayer.play(AssetSource('sounds/chirp.mp3'));
+    } catch (_) {}
   }
 
   Future<void> _save() async {
@@ -149,6 +171,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: '${(_config.silenceThresholdMs / 1000.0).toStringAsFixed(1)}s',
                   onChanged: (v) => _updateConfig(
                       _config.copyWith(silenceThresholdMs: (v * 1000).round())),
+                ),
+                const SizedBox(height: 24),
+
+                // Alert Sounds
+                _SectionHeader(
+                  label: 'ALERT SOUNDS',
+                  color: AppColors.greyLight,
+                  subtitle: 'Audio feedback for keyword detections',
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.grey),
+                  ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        value: _config.enableAlarmSound,
+                        onChanged: (v) => _updateConfig(
+                            _config.copyWith(enableAlarmSound: v)),
+                        title: const Text('Alarm sound (red alerts)',
+                            style: TextStyle(color: AppColors.textNormal)),
+                        subtitle: const Text(
+                          'Repeating alarm when safety keywords detected',
+                          style:
+                              TextStyle(color: AppColors.greyLight, fontSize: 12),
+                        ),
+                        activeColor: AppColors.snaponRed,
+                        tileColor: Colors.transparent,
+                      ),
+                      Divider(height: 1, color: AppColors.grey),
+                      SwitchListTile(
+                        value: _config.enableChirpSound,
+                        onChanged: (v) => _updateConfig(
+                            _config.copyWith(enableChirpSound: v)),
+                        title: const Text('Chirp sound (yellow alerts)',
+                            style: TextStyle(color: AppColors.textNormal)),
+                        subtitle: const Text(
+                          'Brief chirp when warning keywords detected',
+                          style:
+                              TextStyle(color: AppColors.greyLight, fontSize: 12),
+                        ),
+                        activeColor: AppColors.catYellow,
+                        tileColor: Colors.transparent,
+                      ),
+                      Divider(height: 1, color: AppColors.grey),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        child: Row(
+                          children: [
+                            const Text(
+                              'TEST SOUNDS',
+                              style: TextStyle(
+                                color: AppColors.greyLight,
+                                fontSize: 12,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const Spacer(),
+                            _TestSoundButton(
+                              label: 'CHIRP',
+                              color: AppColors.catYellow,
+                              onTap: _testChirp,
+                            ),
+                            const SizedBox(width: 10),
+                            _TestSoundButton(
+                              label: 'ALARM',
+                              color: AppColors.snaponRed,
+                              onTap: _testAlarm,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -404,6 +503,49 @@ class _SliderSetting extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TestSoundButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TestSoundButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.play_arrow, color: color, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

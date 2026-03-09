@@ -7,6 +7,8 @@ class KeywordConfig {
   final int silenceThresholdMs;
   final int maxSegmentMs;
   final bool saveTranscriptLog;
+  final bool enableAlarmSound;
+  final bool enableChirpSound;
 
   const KeywordConfig({
     this.warningKeywords = const [],
@@ -17,9 +19,14 @@ class KeywordConfig {
     this.silenceThresholdMs = 2500,
     this.maxSegmentMs = 60000,
     this.saveTranscriptLog = false,
+    this.enableAlarmSound = true,
+    this.enableChirpSound = true,
   });
 
   static KeywordConfig get defaults => const KeywordConfig(
+        enableAlarmSound: true,
+        enableChirpSound: true,
+        saveTranscriptLog: false,
         warningKeywords: [
           'stoppage',
           'delay',
@@ -131,6 +138,8 @@ class KeywordConfig {
     int? silenceThresholdMs,
     int? maxSegmentMs,
     bool? saveTranscriptLog,
+    bool? enableAlarmSound,
+    bool? enableChirpSound,
   }) {
     return KeywordConfig(
       warningKeywords: warningKeywords ?? this.warningKeywords,
@@ -141,6 +150,8 @@ class KeywordConfig {
       silenceThresholdMs: silenceThresholdMs ?? this.silenceThresholdMs,
       maxSegmentMs: maxSegmentMs ?? this.maxSegmentMs,
       saveTranscriptLog: saveTranscriptLog ?? this.saveTranscriptLog,
+      enableAlarmSound: enableAlarmSound ?? this.enableAlarmSound,
+      enableChirpSound: enableChirpSound ?? this.enableChirpSound,
     );
   }
 
@@ -153,6 +164,8 @@ class KeywordConfig {
         'silenceThresholdMs': silenceThresholdMs,
         'maxSegmentMs': maxSegmentMs,
         'saveTranscriptLog': saveTranscriptLog,
+        'enableAlarmSound': enableAlarmSound,
+        'enableChirpSound': enableChirpSound,
       };
 
   factory KeywordConfig.fromJson(Map<String, dynamic> json) => KeywordConfig(
@@ -166,5 +179,7 @@ class KeywordConfig {
         silenceThresholdMs: json['silenceThresholdMs'] ?? 2500,
         maxSegmentMs: json['maxSegmentMs'] ?? 60000,
         saveTranscriptLog: json['saveTranscriptLog'] ?? false,
+        enableAlarmSound: json['enableAlarmSound'] ?? true,
+        enableChirpSound: json['enableChirpSound'] ?? true,
       );
 }

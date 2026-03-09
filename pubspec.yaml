@@ -34,3 +34,5 @@ flutter:
     - assets/models/joiner.onnx
     - assets/models/tokens.txt
     - assets/sounds/alarm.mp3
+    - assets/sounds/chirp.mp3
+    - assets/icon.png

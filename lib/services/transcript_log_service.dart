@@ -56,4 +56,24 @@ class TranscriptLogService {
     files.sort((a, b) => b.path.compareTo(a.path));
     return files;
   }
+
+  /// Delete a single log file.
+  Future<void> deleteLog(File file) async {
+    if (await file.exists()) await file.delete();
+  }
+
+  /// Delete all log files older than [maxAgeDays] days.
+  Future<int> cleanupOldLogs({int maxAgeDays = 30}) async {
+    final cutoff = DateTime.now().subtract(Duration(days: maxAgeDays));
+    final logs = await getLogs();
+    int removed = 0;
+    for (final file in logs) {
+      final stat = await file.stat();
+      if (stat.modified.isBefore(cutoff)) {
+        await file.delete();
+        removed++;
+      }
+    }
+    return removed;
+  }
 }

@@ -22,6 +22,7 @@ class _ListenScreenState extends State<ListenScreen> {
   final AudioService _audioService = AudioService();
   final TranscriptLogService _logService = TranscriptLogService();
   final AudioPlayer _alarmPlayer = AudioPlayer();
+  final AudioPlayer _chirpPlayer = AudioPlayer();
   late KeywordService _keywordService;
   late SettingsService _settingsService;
 
@@ -96,6 +97,8 @@ class _ListenScreenState extends State<ListenScreen> {
           _pinnedSegments.insert(0, segment);
           _triggerSafetyAlarm();
         } else {
+          // Play chirp for warning alerts
+          _playChirp();
           // Insert after safety segments
           final insertIdx = _pinnedSegments.indexWhere((s) => !s.isSafety);
           if (insertIdx == -1) {
@@ -134,10 +137,22 @@ class _ListenScreenState extends State<ListenScreen> {
   }
 
   Future<void> _playAlarm() async {
+    if (!_settingsService.config.enableAlarmSound) return;
     try {
+      await _alarmPlayer.stop();
       await _alarmPlayer.play(AssetSource('sounds/alarm.mp3'));
     } catch (_) {
-      // Alarm sound not yet bundled — no-op
+      // Sound playback failed — no-op
+    }
+  }
+
+  Future<void> _playChirp() async {
+    if (!_settingsService.config.enableChirpSound) return;
+    try {
+      await _chirpPlayer.stop();
+      await _chirpPlayer.play(AssetSource('sounds/chirp.mp3'));
+    } catch (_) {
+      // Sound playback failed — no-op
     }
   }
 
@@ -171,6 +186,7 @@ class _ListenScreenState extends State<ListenScreen> {
     _alarmTimer?.cancel();
     _warningExpiryTimer?.cancel();
     _alarmPlayer.dispose();
+    _chirpPlayer.dispose();
     _audioService.stopListening();
     _logService.endSession();
     super.dispose();

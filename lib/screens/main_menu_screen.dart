@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'listen_screen.dart';
+import 'logs_screen.dart';
 import 'settings_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
@@ -64,6 +65,18 @@ class MainMenuScreen extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ListenScreen()),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Logs button
+              _MenuButton(
+                icon: Icons.folder_outlined,
+                label: 'LOGS',
+                subtitle: 'View saved session transcripts',
+                color: AppColors.greyLight,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LogsScreen()),
                 ),
               ),
               const SizedBox(height: 20),
