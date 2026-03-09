@@ -38,8 +38,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  static const _audioCtx = AudioContext(
+    android: AudioContextAndroid(
+      audioFocus: AndroidAudioFocus.none,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.alarm,
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+    ),
+  );
+
   Future<void> _testAlarm() async {
     try {
+      await _testPlayer.setAudioContext(_audioCtx);
       await _testPlayer.stop();
       await _testPlayer.play(AssetSource('sounds/alarm.mp3'));
     } catch (_) {}
@@ -47,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _testChirp() async {
     try {
+      await _testPlayer.setAudioContext(_audioCtx);
       await _testPlayer.stop();
       await _testPlayer.play(AssetSource('sounds/chirp.mp3'));
     } catch (_) {}

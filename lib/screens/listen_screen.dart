@@ -54,6 +54,20 @@ class _ListenScreenState extends State<ListenScreen> {
       await _logService.startSession();
     }
 
+    // Configure audio players to NOT request audio focus — prevents the OS
+    // from pausing the mic recording session when alarm/chirp plays.
+    const audioCtx = AudioContext(
+      android: AudioContextAndroid(
+        audioFocus: AndroidAudioFocus.none,
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.alarm,
+        isSpeakerphoneOn: false,
+        stayAwake: false,
+      ),
+    );
+    await _alarmPlayer.setAudioContext(audioCtx);
+    await _chirpPlayer.setAudioContext(audioCtx);
+
     _segmentSub = _audioService.segmentStream.listen(_onSegment);
 
     // Check every 5 min for expired warnings. Safety alerts are never removed.

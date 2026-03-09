@@ -16,9 +16,19 @@ class TranscriptLogService {
     final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
     _logFile = File('${logsDir.path}/session_$timestamp.txt');
     await _logFile!.writeAsString(
-      '=== RadioScribe Session Log ===\n'
-      'Started: ${DateTime.now().toIso8601String()}\n'
-      '================================\n\n',
+      '╔═══════════════════════════════════════════════════════════╗\n'
+      '║                                                           ║\n'
+      '║    ___    _   ___ ___ ___  ___  ___ ___ ___ ___ ___       ║\n'
+      '║    | _ \\  /_\\ |   \\_ _/ _ \\  / __|/ __| _ \\_ _| _ ) __|   ║\n'
+      '║    |   / / _ \\| |) | | (_) |  \\__ \\ (__|   /| || _ \\ _|   ║\n'
+      '║    |_|_\\/_/ \\_\\___/___\\___/  |___/\\___|_|_\\___|___/___|   ║\n'
+      '║                                                           ║\n'
+      '║    MINE RADIO MONITOR  ·  SESSION LOG                     ║\n'
+      '║                                                           ║\n'
+      '╚═══════════════════════════════════════════════════════════╝\n'
+      '\n'
+      'Started : ${DateTime.now().toIso8601String()}\n'
+      '\n',
     );
     _active = true;
   }
@@ -40,8 +50,8 @@ class TranscriptLogService {
   Future<void> endSession() async {
     if (!_active || _logFile == null) return;
     await _logFile!.writeAsString(
-      '\n================================\n'
-      'Ended: ${DateTime.now().toIso8601String()}\n',
+      '\nEnded   : ${DateTime.now().toIso8601String()}\n'
+      '─────────────────────────────────────────────────────────────\n',
       mode: FileMode.append,
     );
     _active = false;
