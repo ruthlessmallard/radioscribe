@@ -68,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'DISCLAIMER',
                       style: TextStyle(
                         color: AppColors.catYellow,
@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                     SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'RadioScribe is a supplemental monitoring tool only. '
                       'It does not replace trained personnel, established safety '
                       'protocols, or regulatory compliance requirements.\n\n'
@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                     SizedBox(height: 14),
-                    const Text(
+                    Text(
                       '© Shawn Baird. All rights reserved.\n'
                       'Non-commercial use only. Unauthorized commercial\n'
                       'use, distribution, or modification is prohibited.\n'

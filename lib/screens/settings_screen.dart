@@ -38,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  static const _audioCtx = AudioContext(
+  AudioContext get _audioCtx => AudioContext(
     android: AudioContextAndroid(
       audioFocus: AndroidAudioFocus.none,
       contentType: AndroidContentType.sonification,
