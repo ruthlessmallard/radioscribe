@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 // Safety Keywords
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'SAFETY KEYWORDS',
                   color: AppColors.snaponRed,
                   subtitle: 'Triggers red alert + alarm',
@@ -116,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Safety Phrases
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'SAFETY PHRASES',
                   color: AppColors.snaponRed,
                   subtitle: 'Multi-word safety triggers',
@@ -130,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Warning Keywords
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'WARNING KEYWORDS',
                   color: AppColors.catYellow,
                   subtitle: 'Triggers yellow alert (pinned)',
@@ -144,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Warning Phrases
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'WARNING PHRASES',
                   color: AppColors.catYellow,
                   subtitle: 'Multi-word warning triggers',
@@ -158,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Silence Threshold
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'SILENCE THRESHOLD',
                   color: AppColors.greyLight,
                   subtitle: 'Seconds of silence to end a segment',
@@ -175,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Alert Sounds
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'ALERT SOUNDS',
                   color: AppColors.greyLight,
                   subtitle: 'Audio feedback for keyword detections',
@@ -199,10 +199,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style:
                               TextStyle(color: AppColors.greyLight, fontSize: 12),
                         ),
-                        activeColor: AppColors.snaponRed,
+                        activeThumbColor: AppColors.snaponRed,
                         tileColor: Colors.transparent,
                       ),
-                      Divider(height: 1, color: AppColors.grey),
+                      const Divider(height: 1, color: AppColors.grey),
                       SwitchListTile(
                         value: _config.enableChirpSound,
                         onChanged: (v) => _updateConfig(
@@ -214,10 +214,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style:
                               TextStyle(color: AppColors.greyLight, fontSize: 12),
                         ),
-                        activeColor: AppColors.catYellow,
+                        activeThumbColor: AppColors.catYellow,
                         tileColor: Colors.transparent,
                       ),
-                      Divider(height: 1, color: AppColors.grey),
+                      const Divider(height: 1, color: AppColors.grey),
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
@@ -252,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
 
                 // Transcript Log Toggle
-                _SectionHeader(
+                const _SectionHeader(
                   label: 'TRANSCRIPT LOG',
                   color: AppColors.greyLight,
                   subtitle: 'Save text-only session logs (no audio)',
@@ -267,7 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Plain text files saved to app storage',
                     style: TextStyle(color: AppColors.greyLight, fontSize: 12),
                   ),
-                  activeColor: AppColors.catYellow,
+                  activeThumbColor: AppColors.catYellow,
                   tileColor: AppColors.surface,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4)),

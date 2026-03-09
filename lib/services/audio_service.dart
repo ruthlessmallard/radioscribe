@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -314,7 +313,7 @@ class AudioService extends ChangeNotifier {
   void dispose() {
     _maxSegmentTimer?.cancel();
     _audioSub?.cancel();
-    _recorder?.stop().catchError((_) {});
+    _recorder?.stop().catchError((_) => null);
     _onlineStream?.free();
     _recognizer?.free();
     _segmentController.close();

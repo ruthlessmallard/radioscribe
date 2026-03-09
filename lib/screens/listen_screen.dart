@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/segment.dart';
-import '../models/keyword_config.dart';
 import '../services/keyword_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';

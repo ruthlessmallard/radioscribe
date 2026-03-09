@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../services/transcript_log_service.dart';
 import '../theme/app_theme.dart';
 

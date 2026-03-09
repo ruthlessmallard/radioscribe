@@ -26,7 +26,6 @@ class KeywordConfig {
   static KeywordConfig get defaults => const KeywordConfig(
         enableAlarmSound: true,
         enableChirpSound: true,
-        saveTranscriptLog: false,
         warningKeywords: [
           'stoppage',
           'delay',
