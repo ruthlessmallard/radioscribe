@@ -277,10 +277,11 @@ class _ListenScreenState extends State<ListenScreen> {
                       statusText = 'Tap mic to start monitoring';
                     }
 
+                    final bottomInset = MediaQuery.of(context).padding.bottom;
                     return Container(
                       color: AppColors.surface,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 14),
+                      padding: EdgeInsets.fromLTRB(
+                          20, 14, 20, 14 + bottomInset),
                       child: Row(
                         children: [
                           Expanded(
