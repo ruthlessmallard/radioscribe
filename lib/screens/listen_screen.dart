@@ -28,8 +28,13 @@ class _ListenScreenState extends State<ListenScreen> {
   final List<TranscriptSegment> _pinnedSegments = [];
   final List<TranscriptSegment> _scrollingSegments = [];
   static const int _maxScrollingSegments = 40;
+  // Warnings auto-expire after 45 min. Safety alerts never expire.
+  static const Duration _warningExpiry = Duration(minutes: 45);
+  // Hard cap on pinned warnings — oldest drop off the bottom.
+  static const int _maxPinnedWarnings = 30;
 
   Timer? _alarmTimer;
+  Timer? _warningExpiryTimer;
   bool _alarmActive = false;
   bool _isInitialized = false;
 
@@ -50,6 +55,15 @@ class _ListenScreenState extends State<ListenScreen> {
     }
 
     _segmentSub = _audioService.segmentStream.listen(_onSegment);
+
+    // Check every 5 min for expired warnings. Safety alerts are never removed.
+    _warningExpiryTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      final cutoff = DateTime.now().subtract(_warningExpiry);
+      setState(() {
+        _pinnedSegments.removeWhere(
+            (s) => !s.isSafety && s.timestamp.isBefore(cutoff));
+      });
+    });
 
     setState(() => _isInitialized = true);
   }
@@ -83,12 +97,18 @@ class _ListenScreenState extends State<ListenScreen> {
           _triggerSafetyAlarm();
         } else {
           // Insert after safety segments
-          final insertIdx = _pinnedSegments
-              .indexWhere((s) => !s.isSafety);
+          final insertIdx = _pinnedSegments.indexWhere((s) => !s.isSafety);
           if (insertIdx == -1) {
             _pinnedSegments.add(segment);
           } else {
             _pinnedSegments.insert(insertIdx, segment);
+          }
+          // Enforce warning cap — drop oldest warnings, never safety alerts
+          final warningCount =
+              _pinnedSegments.where((s) => !s.isSafety).length;
+          if (warningCount > _maxPinnedWarnings) {
+            _pinnedSegments.removeWhere((s) => !s.isSafety &&
+                s == _pinnedSegments.lastWhere((w) => !w.isSafety));
           }
         }
       } else {
@@ -149,6 +169,7 @@ class _ListenScreenState extends State<ListenScreen> {
   void dispose() {
     _segmentSub?.cancel();
     _alarmTimer?.cancel();
+    _warningExpiryTimer?.cancel();
     _alarmPlayer.dispose();
     _audioService.stopListening();
     _logService.endSession();
