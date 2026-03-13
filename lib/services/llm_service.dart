@@ -90,8 +90,9 @@ class LlmService extends ChangeNotifier {
       }
 
       debugPrint('[LlmService] Loading Gemma model...');
+      // Load the model file first, then initialise the inference engine.
+      await FlutterGemmaPlugin.instance.loadModel(modelPath: path);
       await FlutterGemmaPlugin.instance.init(
-        modelPath: path,
         maxTokens: _maxResponseTokens,
         temperature: 0.1,  // Low temp — we want deterministic corrections
         topK: 1,
@@ -130,7 +131,7 @@ class LlmService extends ChangeNotifier {
       final prompt = _buildPrompt(rawText);
       final response =
           await FlutterGemmaPlugin.instance.getResponse(prompt: prompt);
-      final corrected = _clean(response, rawText);
+      final corrected = _clean(response ?? '', rawText);
 
       // Update rolling context with the raw input (not the correction, so
       // the model keeps seeing realistic mine radio language in context).
