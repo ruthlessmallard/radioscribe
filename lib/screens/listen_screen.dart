@@ -82,11 +82,11 @@ class _ListenScreenState extends State<ListenScreen> {
     setState(() => _isInitialized = true);
   }
 
-  void _onSegment(String text) {
-    final result = _keywordService.analyze(text);
+  void _onSegment(String rawText) {
+    final result = _keywordService.analyze(rawText);
     final segment = TranscriptSegment(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      text: text,
+      text: result.text,
       timestamp: DateTime.now(),
       alert: result.alert,
       matchedKeywords: result.matched,

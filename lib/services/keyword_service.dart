@@ -1,14 +1,21 @@
 import '../models/keyword_config.dart';
 import '../models/segment.dart';
+import 'profanity_service.dart';
 
 class KeywordService {
   final KeywordConfig config;
 
   KeywordService(this.config);
 
-  /// Analyze a text segment and return its alert level + matched keywords
-  ({SegmentAlert alert, List<String> matched}) analyze(String text) {
-    final lower = text.toLowerCase();
+  /// Analyze a text segment and return its alert level + matched keywords.
+  /// Profanity is censored in the returned [text] before display.
+  ({SegmentAlert alert, List<String> matched, String text}) analyze(
+      String text) {
+    // Censor profanity before display — do this first so the censored version
+    // is what gets stored in the transcript log.
+    final cleanText = ProfanityService.censor(text);
+
+    final lower = cleanText.toLowerCase();
     final matched = <String>[];
 
     // Expand text with phonetic alternates before matching
@@ -18,7 +25,11 @@ class KeywordService {
     for (final phrase in config.safetyPhrases) {
       if (expanded.contains(phrase.toLowerCase())) {
         matched.add(phrase);
-        return (alert: SegmentAlert.safety, matched: matched);
+        return (
+          alert: SegmentAlert.safety,
+          matched: matched,
+          text: cleanText,
+        );
       }
     }
 
@@ -26,7 +37,11 @@ class KeywordService {
     for (final keyword in config.safetyKeywords) {
       if (_containsWord(expanded, keyword.toLowerCase())) {
         matched.add(keyword);
-        return (alert: SegmentAlert.safety, matched: matched);
+        return (
+          alert: SegmentAlert.safety,
+          matched: matched,
+          text: cleanText,
+        );
       }
     }
 
@@ -45,10 +60,10 @@ class KeywordService {
     }
 
     if (matched.isNotEmpty) {
-      return (alert: SegmentAlert.warning, matched: matched);
+      return (alert: SegmentAlert.warning, matched: matched, text: cleanText);
     }
 
-    return (alert: SegmentAlert.none, matched: []);
+    return (alert: SegmentAlert.none, matched: [], text: cleanText);
   }
 
   /// Expand text by adding phonetic alternate forms
