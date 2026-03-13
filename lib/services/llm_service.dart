@@ -1,27 +1,26 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-/// LlmService — on-device LLM post-processing for Sherpa transcript segments.
+/// LlmService — on-device Gemma post-processing for Sherpa transcript segments.
 ///
-/// Uses Gemma 2B-IT via MediaPipe (flutter_gemma) to clean up garbled
-/// speech-recognition output in the context of mine radio communications.
+/// Uses flutter_gemma (MediaPipe / LiteRT) to clean up garbled STT output in
+/// the context of mine radio communications. Operates fully offline.
 ///
-/// Model file: gemma-2b-it-gpu-int4.bin (~1.5 GB)
-/// Must be imported by the user via Settings → AI Correction → Import Model.
+/// Model file: gemma-2b-it-gpu-int4.bin (~1.5 GB), .task, or similar.
+/// User imports the file via Settings → AI Correction → Import Model.
 ///
 /// Usage:
 ///   1. Call [loadModel] after the user imports the model file.
 ///   2. Call [correct] with each raw Sherpa segment.
-///   3. Rolling context is maintained automatically.
+///   3. Rolling context is maintained in the prompt (not in Gemma's session).
 class LlmService extends ChangeNotifier {
   LlmService._();
   static final LlmService instance = LlmService._();
 
-  // ── Public state ────────────────────────────────────────────────────────
+  // ── Public state ──────────────────────────────────────────────────────────
   bool _modelLoaded = false;
   bool _modelLoading = false;
   bool _modelError = false;
@@ -34,12 +33,17 @@ class LlmService extends ChangeNotifier {
   String get modelErrorMessage => _modelErrorMessage;
   bool get enabled => _enabled && _modelLoaded;
 
-  // ── Config ───────────────────────────────────────────────────────────────
-  static const _modelFilename = 'gemma-2b-it-gpu-int4.bin';
+  // ── Config ────────────────────────────────────────────────────────────────
+  static const _modelFilename = 'gemma-radioscribe.bin';
   static const _maxContextLines = 3;
-  static const _maxResponseTokens = 128;
+  static const _maxTokens = 256;
+  // Recreate the chat session every N corrections to prevent context overflow.
+  static const _sessionRefreshEvery = 8;
 
-  // ── State ────────────────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
+  InferenceModel? _model;
+  InferenceChat? _chat;
+  int _correctionCount = 0;
   final List<String> _contextLines = [];
 
   // ── Model file path ───────────────────────────────────────────────────────
@@ -56,12 +60,12 @@ class LlmService extends ChangeNotifier {
 
   // ── Model management ──────────────────────────────────────────────────────
 
-  /// Import a model file from [sourcePath] (e.g. picked from Downloads).
+  /// Import a model file from [sourcePath] (e.g. from the Downloads folder).
   /// Copies it to app support dir, then loads it.
   Future<bool> importModel(String sourcePath) async {
     try {
       final dest = await modelPath;
-      debugPrint('[LlmService] Copying model from $sourcePath → $dest');
+      debugPrint('[LlmService] Copying model: $sourcePath → $dest');
       await File(sourcePath).copy(dest);
       return await loadModel();
     } catch (e) {
@@ -73,7 +77,7 @@ class LlmService extends ChangeNotifier {
     }
   }
 
-  /// Load the Gemma model from app support dir into MediaPipe.
+  /// Install and initialise the Gemma model from app support dir.
   Future<bool> loadModel() async {
     if (_modelLoaded) return true;
     if (_modelLoading) return false;
@@ -89,19 +93,32 @@ class LlmService extends ChangeNotifier {
         throw Exception('Model file not found at $path');
       }
 
-      debugPrint('[LlmService] Loading Gemma model...');
-      // Load the model file first, then initialise the inference engine.
-      await FlutterGemmaPlugin.instance.loadModel(modelPath: path);
-      await FlutterGemmaPlugin.instance.init(
-        maxTokens: _maxResponseTokens,
-        temperature: 0.1,  // Low temp — we want deterministic corrections
-        topK: 1,
-        randomSeed: 42,
+      debugPrint('[LlmService] Registering model with flutter_gemma...');
+
+      // Detect file type from extension — .task/.litertlm = task, else binary.
+      final fileType = (path.endsWith('.task') || path.endsWith('.litertlm'))
+          ? ModelFileType.task
+          : ModelFileType.binary;
+
+      // Register/install the model so flutter_gemma knows about it.
+      await FlutterGemma.installModel(
+        modelType: ModelType.gemmaIt,
+        fileType: fileType,
+      ).fromFile(path).install();
+
+      // Create the inference model instance.
+      _model = await FlutterGemmaPlugin.instance.createModel(
+        modelType: ModelType.gemmaIt,
+        fileType: fileType,
+        maxTokens: _maxTokens,
       );
+
+      // Pre-warm the first chat session.
+      await _refreshChat();
 
       _modelLoaded = true;
       _modelLoading = false;
-      debugPrint('[LlmService] Gemma model loaded.');
+      debugPrint('[LlmService] Gemma model ready.');
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -115,6 +132,18 @@ class LlmService extends ChangeNotifier {
     }
   }
 
+  Future<void> _refreshChat() async {
+    try {
+      await _chat?.session.close();
+    } catch (_) {}
+    _chat = await _model!.createChat(
+      temperature: 0.1,
+      topK: 1,
+      randomSeed: 42,
+    );
+    _correctionCount = 0;
+  }
+
   void setEnabled(bool value) {
     _enabled = value;
     notifyListeners();
@@ -125,22 +154,27 @@ class LlmService extends ChangeNotifier {
   /// Post-process a raw Sherpa segment. Returns the corrected text.
   /// Falls back to [rawText] if the model isn't loaded or returns garbage.
   Future<String> correct(String rawText) async {
-    if (!enabled) return rawText;
+    if (!enabled || _model == null || _chat == null) return rawText;
 
     try {
-      final prompt = _buildPrompt(rawText);
-      final response =
-          await FlutterGemmaPlugin.instance.getResponse(prompt: prompt);
-      final corrected = _clean(response ?? '', rawText);
+      // Refresh session periodically to avoid context overflow.
+      if (_correctionCount >= _sessionRefreshEvery) {
+        await _refreshChat();
+      }
 
-      // Update rolling context with the raw input (not the correction, so
-      // the model keeps seeing realistic mine radio language in context).
+      final prompt = _buildPrompt(rawText);
+      await _chat!.addQueryChunk(Message(text: prompt, isUser: true));
+      final response = await _chat!.session.getResponse();
+
+      _correctionCount++;
       _addToContext(rawText);
 
-      return corrected;
+      return _clean(response, rawText);
     } catch (e) {
       debugPrint('[LlmService] Correction error: $e');
       _addToContext(rawText);
+      // Try refreshing on next call after an error.
+      _correctionCount = _sessionRefreshEvery;
       return rawText;
     }
   }
@@ -152,34 +186,27 @@ class LlmService extends ChangeNotifier {
         ? _contextLines.join('\n')
         : '(no prior context)';
 
-    return '''<start_of_turn>user
-You are a transcription corrector for mine radio communications in northern Nevada. Fix obvious speech recognition errors using mining vocabulary and radio protocol context. Keep the same meaning and length. Reply with ONLY the corrected text — no explanation, no quotes.
-
-Previous transmissions:
-$ctx
-
-Raw transcription: $rawText<end_of_turn>
-<start_of_turn>model
-''';
+    return 'Fix obvious speech recognition errors in this mine radio '
+        'transmission from northern Nevada. Reply with ONLY the corrected '
+        'text — no explanation.\n'
+        'Context:\n$ctx\n'
+        'Raw: $rawText\n'
+        'Corrected:';
   }
 
-  /// Sanitize the model's response — strip extra whitespace, reject outputs
-  /// that look hallucinated (too long, or contain nothing useful).
+  /// Strip noise from the model response and sanity-check it.
   String _clean(String response, String fallback) {
     final cleaned = response
-        .replaceAll(RegExp(r'<[^>]+>'), '') // strip any stray tags
+        .replaceAll(RegExp(r'<[^>]+>'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 
-    // Sanity checks — fall back to raw if response is suspicious
     if (cleaned.isEmpty) return fallback;
-    if (cleaned.length > rawTextMaxLength(fallback) * 3) return fallback;
+    if (cleaned.length > fallback.length * 3) return fallback;
     if (cleaned.toLowerCase().contains('as an ai')) return fallback;
 
-    return cleaned.toUpperCase(); // match existing all-caps transcript style
+    return cleaned.toUpperCase();
   }
-
-  int rawTextMaxLength(String text) => text.length.clamp(10, 500);
 
   void _addToContext(String text) {
     _contextLines.add(text);
@@ -188,8 +215,9 @@ Raw transcription: $rawText<end_of_turn>
     }
   }
 
-  /// Clear rolling context (e.g. at session end).
-  void clearContext() {
+  /// Clear context and refresh the chat session (call at session end).
+  Future<void> clearContext() async {
     _contextLines.clear();
+    if (_model != null) await _refreshChat();
   }
 }
