@@ -100,7 +100,7 @@ class _ListenScreenState extends State<ListenScreen> {
       NotificationService.instance.showAlert(
         alert: result.alert,
         keywords: result.matched,
-        text: text,
+        text: result.text,
       );
     }
 
