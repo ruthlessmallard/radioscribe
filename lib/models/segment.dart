@@ -12,6 +12,15 @@ class TranscriptSegment {
   final double confidence;
   bool isDismissed;
 
+  /// LLM-corrected version of [text]. Null until correction completes.
+  String? correctedText;
+
+  /// True once the LLM correction has been applied and [correctedText] is set.
+  bool isLlmCorrected;
+
+  /// The text to display — corrected version if available, raw otherwise.
+  String get displayText => correctedText ?? text;
+
   TranscriptSegment({
     required this.id,
     required this.text,
@@ -20,6 +29,8 @@ class TranscriptSegment {
     this.matchedKeywords = const [],
     this.confidence = 1.0,
     this.isDismissed = false,
+    this.correctedText,
+    this.isLlmCorrected = false,
   });
 
   bool get isPinned => alert != SegmentAlert.none && !isDismissed;
@@ -61,7 +72,11 @@ class TranscriptSegment {
     }
   }
 
-  TranscriptSegment copyWith({bool? isDismissed}) {
+  TranscriptSegment copyWith({
+    bool? isDismissed,
+    String? correctedText,
+    bool? isLlmCorrected,
+  }) {
     return TranscriptSegment(
       id: id,
       text: text,
@@ -70,6 +85,8 @@ class TranscriptSegment {
       matchedKeywords: matchedKeywords,
       confidence: confidence,
       isDismissed: isDismissed ?? this.isDismissed,
+      correctedText: correctedText ?? this.correctedText,
+      isLlmCorrected: isLlmCorrected ?? this.isLlmCorrected,
     );
   }
 }

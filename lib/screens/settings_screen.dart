@@ -1,7 +1,9 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/keyword_config.dart';
 import '../services/settings_service.dart';
+import '../services/llm_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,6 +18,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late KeywordConfig _config;
   bool _loaded = false;
   bool _dirty = false;
+  bool _llmEnabled = false;
+  bool _llmModelPresent = false;
+  bool _llmImporting = false;
   final AudioPlayer _testPlayer = AudioPlayer();
 
   @override
@@ -26,10 +31,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     _settingsService = await SettingsService.getInstance();
+    final modelPresent = await LlmService.instance.isModelPresent;
     setState(() {
       _config = _settingsService.config;
       _loaded = true;
+      _llmModelPresent = modelPresent;
+      _llmEnabled = LlmService.instance.enabled;
     });
+  }
+
+  Future<void> _importLlmModel() async {
+    setState(() => _llmImporting = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['bin'],
+        dialogTitle: 'Select Gemma model file',
+      );
+      if (result == null || result.files.single.path == null) {
+        setState(() => _llmImporting = false);
+        return;
+      }
+      final path = result.files.single.path!;
+      final ok = await LlmService.instance.importModel(path);
+      setState(() {
+        _llmImporting = false;
+        _llmModelPresent = ok;
+        if (ok) _llmEnabled = true;
+      });
+    } catch (e) {
+      setState(() => _llmImporting = false);
+    }
   }
 
   @override
@@ -284,6 +316,141 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4)),
                 ),
+                const SizedBox(height: 24),
+
+                // ── AI Correction ──────────────────────────────────────────
+                const _SectionHeader(
+                  label: 'AI CORRECTION',
+                  color: AppColors.greyLight,
+                  subtitle: 'On-device Gemma 2B cleans up transcript (S24 Ultra)',
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.grey),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SwitchListTile(
+                        value: _llmEnabled,
+                        onChanged: _llmModelPresent
+                            ? (v) {
+                                setState(() => _llmEnabled = v);
+                                LlmService.instance.setEnabled(v);
+                                if (v && !LlmService.instance.modelLoaded) {
+                                  LlmService.instance.loadModel();
+                                }
+                              }
+                            : null,
+                        title: const Text('Enable AI correction',
+                            style: TextStyle(color: AppColors.textNormal)),
+                        subtitle: Text(
+                          _llmModelPresent
+                              ? 'Post-processes each segment through Gemma 2B'
+                              : 'Import model file below to enable',
+                          style: const TextStyle(
+                              color: AppColors.greyLight, fontSize: 12),
+                        ),
+                        activeThumbColor: AppColors.catYellow,
+                        tileColor: Colors.transparent,
+                      ),
+                      const Divider(height: 1, color: AppColors.grey),
+                      Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _llmModelPresent
+                                      ? Icons.check_circle_outline
+                                      : Icons.download_outlined,
+                                  size: 14,
+                                  color: _llmModelPresent
+                                      ? AppColors.catYellow
+                                      : AppColors.greyLight,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _llmModelPresent
+                                      ? 'Model installed'
+                                      : 'Model not found',
+                                  style: TextStyle(
+                                    color: _llmModelPresent
+                                        ? AppColors.catYellow
+                                        : AppColors.greyLight,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'gemma-2b-it-gpu-int4.bin (~1.5 GB)\n'
+                              'Download from kaggle.com/models/google/gemma\n'
+                              'then tap Import to load it.',
+                              style: TextStyle(
+                                color: AppColors.greyLight,
+                                fontSize: 11,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: _llmImporting ? null : _importLlmModel,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: AppColors.catYellow
+                                      .withValues(alpha: _llmImporting ? 0.05 : 0.12),
+                                  border: Border.all(
+                                    color: AppColors.catYellow
+                                        .withValues(alpha: _llmImporting ? 0.2 : 0.5),
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_llmImporting)
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.catYellow,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(Icons.folder_open,
+                                          color: AppColors.catYellow, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _llmImporting ? 'IMPORTING...' : 'IMPORT MODEL',
+                                      style: TextStyle(
+                                        color: AppColors.catYellow
+                                            .withValues(alpha: _llmImporting ? 0.4 : 1.0),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 32),
 
                 // Reset to defaults

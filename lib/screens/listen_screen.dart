@@ -7,6 +7,7 @@ import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/audio_service.dart';
 import '../services/transcript_log_service.dart';
+import '../services/llm_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/segment_card.dart';
 
@@ -102,6 +103,29 @@ class _ListenScreenState extends State<ListenScreen> {
         keywords: result.matched,
         text: result.text,
       );
+    }
+
+    // Async LLM correction — show raw segment immediately, then silently
+    // swap in the corrected text once Gemma finishes (~0.5–2s).
+    if (LlmService.instance.enabled) {
+      LlmService.instance.correct(result.text).then((corrected) {
+        if (corrected == result.text) return; // no change, skip redraw
+        setState(() {
+          // Find and update the segment in whichever list it landed in
+          final pinIdx = _pinnedSegments.indexWhere((s) => s.id == segment.id);
+          if (pinIdx != -1) {
+            _pinnedSegments[pinIdx].correctedText = corrected;
+            _pinnedSegments[pinIdx].isLlmCorrected = true;
+          } else {
+            final scrollIdx =
+                _scrollingSegments.indexWhere((s) => s.id == segment.id);
+            if (scrollIdx != -1) {
+              _scrollingSegments[scrollIdx].correctedText = corrected;
+              _scrollingSegments[scrollIdx].isLlmCorrected = true;
+            }
+          }
+        });
+      }).catchError((_) {}); // silent failure — raw text stays
     }
 
     setState(() {

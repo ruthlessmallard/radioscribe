@@ -88,21 +88,47 @@ class SegmentCard extends StatelessWidget {
               const SizedBox(height: 6),
             ],
             Text(
-              segment.text,
+              segment.displayText,
               style: TextStyle(
                 color: segment.textColor,
                 fontSize: 16,
                 height: 1.4,
               ),
             ),
-            if (showTimestamp) ...[
+            if (showTimestamp || segment.isLlmCorrected) ...[
               const SizedBox(height: 4),
-              Text(
-                _formatTime(segment.timestamp),
-                style: const TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 11,
-                ),
+              Row(
+                children: [
+                  if (showTimestamp)
+                    Text(
+                      _formatTime(segment.timestamp),
+                      style: const TextStyle(
+                        color: AppColors.greyLight,
+                        fontSize: 11,
+                      ),
+                    ),
+                  const Spacer(),
+                  if (segment.isLlmCorrected)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 11,
+                          color: AppColors.greyLight.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          'AI',
+                          style: TextStyle(
+                            color: AppColors.greyLight.withValues(alpha: 0.6),
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
             ],
           ],
