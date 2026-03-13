@@ -47,7 +47,10 @@ class AudioService extends ChangeNotifier {
   /// RMS amplitude gate — chunks quieter than this are replaced with silence
   /// before reaching the recognizer, preventing hallucinations from engine
   /// rumble and background noise.
-  static const double _rmsGateThreshold = 0.008; // ≈ −42 dBFS
+  ///
+  /// 0.02 ≈ −34 dBFS. Keyboard clicks and ambient room noise typically sit
+  /// below this; sustained speech is well above it.
+  static const double _rmsGateThreshold = 0.02;
 
   // ── Internals ─────────────────────────────────────────────────────────────
   final StreamController<String> _segmentController =
