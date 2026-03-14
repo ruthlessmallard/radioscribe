@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['bin'],
+        allowedExtensions: ['bin', 'task', 'litertlm', 'tflite'],
         dialogTitle: 'Select Gemma model file',
       );
       if (result == null || result.files.single.path == null) {
@@ -390,8 +390,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              'gemma-2b-it-gpu-int4.bin (~1.5 GB)\n'
-                              'Download from kaggle.com/models/google/gemma\n'
+                              'Download a .task file from:\n'
+                              'huggingface.co/litert-community/Gemma3-1B-IT\n'
                               'then tap Import to load it.',
                               style: TextStyle(
                                 color: AppColors.greyLight,
@@ -399,6 +399,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 height: 1.5,
                               ),
                             ),
+                            if (LlmService.instance.modelError) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                'Error: ${LlmService.instance.modelErrorMessage}',
+                                style: TextStyle(
+                                  color: AppColors.snaponRed.withValues(alpha: 0.9),
+                                  fontSize: 10,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 10),
                             GestureDetector(
                               onTap: _llmImporting ? null : _importLlmModel,
