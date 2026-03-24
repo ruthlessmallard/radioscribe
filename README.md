@@ -15,8 +15,8 @@ RadioScribe monitors radio traffic through your phone's microphone, transcribes 
 | Level | Trigger | Color | Behavior |
 |-------|---------|-------|----------|
 | Normal | No match | White | Scrolls off naturally |
-| Warning | Keyword match | CAT Yellow | Pinned, swipe to dismiss |
-| Safety | Safety keyword | Snap-on Red | Pinned top, alarm after 20s |
+| Warning | Keyword match | industrial Yellow | Pinned, swipe to dismiss |
+| Safety | Safety keyword | tool handle Red | Pinned top, alarm after 20s |
 
 ## Setup Before Building
 
