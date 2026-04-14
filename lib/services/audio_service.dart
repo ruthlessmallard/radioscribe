@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -19,6 +20,8 @@ import 'dart:io';
 ///   4. Endpoint detection or 60s max triggers a segment flush →
 ///      emitted on [segmentStream].
 ///   5. [stopListening] flushes any remaining text and stops the recorder.
+///
+/// Audio preprocessing: 300-3400Hz bandpass filter to match radio frequency range.
 class AudioService extends ChangeNotifier {
   // ── Public state ──────────────────────────────────────────────────────────
   bool _isListening = false;
@@ -42,6 +45,15 @@ class AudioService extends ChangeNotifier {
   static const int _sampleRate = 16000;
   static const Duration _maxSegmentDuration = Duration(seconds: 60);
 
+  // Bandpass filter settings (radio frequency range)
+  static const double _lowCutoffHz = 300.0;
+  static const double _highCutoffHz = 3400.0;
+
+  // Energy gate threshold (RMS amplitude below this = silence/noise)
+  // Tuned for 16kHz PCM normalized to [-1.0, 1.0]
+  static const double _energyGateThreshold = 0.015;
+  static const int _minConsecutiveSilentFrames = 3; // ~60ms at typical chunk sizes
+
   // ── Internals ─────────────────────────────────────────────────────────────
   final StreamController<String> _segmentController =
       StreamController<String>.broadcast();
@@ -56,6 +68,13 @@ class AudioService extends ChangeNotifier {
 
   // Timers
   Timer? _maxSegmentTimer;
+
+  // Bandpass filter state (biquad cascade: high-pass @ 300Hz, low-pass @ 3400Hz)
+  double _hpX1 = 0, _hpX2 = 0, _hpY1 = 0, _hpY2 = 0;
+  double _lpX1 = 0, _lpX2 = 0, _lpY1 = 0, _lpY2 = 0;
+
+  // Energy gate state
+  int _consecutiveSilentFrames = 0;
 
   // ── Permission ────────────────────────────────────────────────────────────
 
@@ -130,11 +149,13 @@ class AudioService extends ChangeNotifier {
           modelType: '',
         ),
         enableEndpoint: true,
-        rule1MinTrailingSilence: 2.4,
-        rule2MinTrailingSilence: 1.2,
+        // Tuned for noisy mine environment: cut off faster in silence
+        rule1MinTrailingSilence: 0.8, // Was 2.4 - end quickly after speech
+        rule2MinTrailingSilence: 0.4, // Was 1.2 - tighter for noise bursts
         rule3MinUtteranceLength: 20.0,
         decodingMethod: 'greedy_search',
         maxActivePaths: 4,
+        blankPenalty: 1.5, // Penalize blanks to reduce hallucinations on noise
       );
 
       _recognizer = sherpa_onnx.OnlineRecognizer(config);
@@ -242,8 +263,25 @@ class AudioService extends ChangeNotifier {
     if (_recognizer == null || _onlineStream == null) return;
 
     try {
-      final samplesFloat32 =
-          _convertBytesToFloat32(data);
+      var samplesFloat32 = _convertBytesToFloat32(data);
+      // Apply 300-3400Hz bandpass filter before STT
+      samplesFloat32 = _applyBandpassFilter(samplesFloat32);
+
+      // Energy gate: skip very low-energy frames to reduce noise hallucinations
+      if (_isEnergyBelowThreshold(samplesFloat32)) {
+        _consecutiveSilentFrames++;
+        // After several silent frames, still feed minimal zeroes to keep stream alive
+        // but don't process recognition to save CPU
+        if (_consecutiveSilentFrames > _minConsecutiveSilentFrames) {
+          // Feed zeroes to indicate silence to the recognizer
+          final silence = Float32List(samplesFloat32.length);
+          _onlineStream!.acceptWaveform(samples: silence, sampleRate: _sampleRate);
+          return;
+        }
+      } else {
+        _consecutiveSilentFrames = 0;
+      }
+
       _onlineStream!.acceptWaveform(
           samples: samplesFloat32, sampleRate: _sampleRate);
 
@@ -305,6 +343,62 @@ class AudioService extends ChangeNotifier {
       values[i ~/ 2] = short / 32768.0;
     }
     return values;
+  }
+
+  // ── Bandpass filter (300-3400Hz) ───────────────────────────────────────────
+
+  /// Apply 2nd-order Butterworth bandpass filter (cascade of HP @ 300Hz + LP @ 3400Hz).
+  /// Tuned for 16kHz sample rate to match typical radio voice range.
+  Float32List _applyBandpassFilter(Float32List samples) {
+    // Coefficients pre-calculated for Butterworth @ 16kHz
+    // High-pass @ 300Hz (2nd order)
+    const double hpB0 = 0.9706196;
+    const double hpB1 = -1.9412393;
+    const double hpB2 = 0.9706196;
+    const double hpA1 = -1.9409320;
+    const double hpA2 = 0.9415465;
+
+    // Low-pass @ 3400Hz (2nd order)
+    const double lpB0 = 0.2075319;
+    const double lpB1 = 0.4150638;
+    const double lpB2 = 0.2075319;
+    const double lpA1 = -0.3139590;
+    const double lpA2 = 0.1440860;
+
+    final output = Float32List(samples.length);
+
+    for (var i = 0; i < samples.length; i++) {
+      final x = samples[i];
+
+      // High-pass stage
+      final hpOut = hpB0 * x + hpB1 * _hpX1 + hpB2 * _hpX2 - hpA1 * _hpY1 - hpA2 * _hpY2;
+      _hpX2 = _hpX1;
+      _hpX1 = x;
+      _hpY2 = _hpY1;
+      _hpY1 = hpOut;
+
+      // Low-pass stage
+      final lpOut = lpB0 * hpOut + lpB1 * _lpX1 + lpB2 * _lpX2 - lpA1 * _lpY1 - lpA2 * _lpY2;
+      _lpX2 = _lpX1;
+      _lpX1 = hpOut;
+      _lpY2 = _lpY1;
+      _lpY1 = lpOut;
+
+      output[i] = lpOut;
+    }
+
+    return output;
+  }
+
+  /// Check if frame energy (RMS) is below threshold indicating silence/noise.
+  bool _isEnergyBelowThreshold(Float32List samples) {
+    if (samples.isEmpty) return true;
+    double sumSquares = 0.0;
+    for (final s in samples) {
+      sumSquares += s * s;
+    }
+    final rms = math.sqrt(sumSquares / samples.length);
+    return rms < _energyGateThreshold;
   }
 
   // ── Dispose ───────────────────────────────────────────────────────────────
