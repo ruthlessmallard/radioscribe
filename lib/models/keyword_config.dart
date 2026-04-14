@@ -9,6 +9,7 @@ class KeywordConfig {
   final bool saveTranscriptLog;
   final bool enableAlarmSound;
   final bool enableChirpSound;
+  final bool debugMode;
 
   const KeywordConfig({
     this.warningKeywords = const [],
@@ -21,6 +22,7 @@ class KeywordConfig {
     this.saveTranscriptLog = false,
     this.enableAlarmSound = true,
     this.enableChirpSound = true,
+    this.debugMode = false,
   });
 
   static KeywordConfig get defaults => const KeywordConfig(
@@ -126,6 +128,7 @@ class KeywordConfig {
         silenceThresholdMs: 2500,
         maxSegmentMs: 60000,
         saveTranscriptLog: false,
+        debugMode: false,
       );
 
   KeywordConfig copyWith({
@@ -139,6 +142,7 @@ class KeywordConfig {
     bool? saveTranscriptLog,
     bool? enableAlarmSound,
     bool? enableChirpSound,
+    bool? debugMode,
   }) {
     return KeywordConfig(
       warningKeywords: warningKeywords ?? this.warningKeywords,
@@ -151,6 +155,7 @@ class KeywordConfig {
       saveTranscriptLog: saveTranscriptLog ?? this.saveTranscriptLog,
       enableAlarmSound: enableAlarmSound ?? this.enableAlarmSound,
       enableChirpSound: enableChirpSound ?? this.enableChirpSound,
+      debugMode: debugMode ?? this.debugMode,
     );
   }
 
@@ -165,6 +170,7 @@ class KeywordConfig {
         'saveTranscriptLog': saveTranscriptLog,
         'enableAlarmSound': enableAlarmSound,
         'enableChirpSound': enableChirpSound,
+        'debugMode': debugMode,
       };
 
   factory KeywordConfig.fromJson(Map<String, dynamic> json) => KeywordConfig(
@@ -180,5 +186,6 @@ class KeywordConfig {
         saveTranscriptLog: json['saveTranscriptLog'] ?? false,
         enableAlarmSound: json['enableAlarmSound'] ?? true,
         enableChirpSound: json['enableChirpSound'] ?? true,
+        debugMode: json['debugMode'] ?? false,
       );
 }

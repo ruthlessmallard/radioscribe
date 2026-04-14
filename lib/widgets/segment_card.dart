@@ -7,12 +7,14 @@ class SegmentCard extends StatelessWidget {
   final TranscriptSegment segment;
   final VoidCallback onDismiss;
   final bool showTimestamp;
+  final bool debugMode;
 
   const SegmentCard({
     super.key,
     required this.segment,
     required this.onDismiss,
     this.showTimestamp = false,
+    this.debugMode = false,
   });
 
   @override
@@ -87,6 +89,7 @@ class SegmentCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
+            // Main corrected text
             Text(
               segment.text,
               style: TextStyle(
@@ -95,6 +98,97 @@ class SegmentCard extends StatelessWidget {
                 height: 1.4,
               ),
             ),
+            // Debug info: raw text, corrections, context
+            if (debugMode && _hasDebugInfo) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (segment.rawText != null && segment.rawText != segment.text) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'RAW: ',
+                            style: TextStyle(
+                              color: AppColors.greyLight,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              segment.rawText!,
+                              style: const TextStyle(
+                                color: AppColors.greyLight,
+                                fontSize: 10,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                    if (segment.corrections.isNotEmpty) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'CORRECTIONS: ',
+                            style: TextStyle(
+                              color: AppColors.catYellow,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              segment.corrections.join('; '),
+                              style: const TextStyle(
+                                color: AppColors.catYellow,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                    // Confidence indicator
+                    Row(
+                      children: [
+                        const Text(
+                          'CONFIDENCE: ',
+                          style: TextStyle(
+                            color: AppColors.greyLight,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${(segment.confidence * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            color: segment.confidence > 0.8
+                                ? Colors.green
+                                : segment.confidence > 0.5
+                                    ? AppColors.catYellow
+                                    : AppColors.snaponRed,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (showTimestamp) ...[
               const SizedBox(height: 4),
               Text(
@@ -109,6 +203,11 @@ class SegmentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool get _hasDebugInfo {
+    return segment.rawText != null && segment.rawText != segment.text ||
+        segment.corrections.isNotEmpty;
   }
 
   String _formatTime(DateTime dt) {

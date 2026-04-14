@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:io';
+import 'mining_vocabulary.dart';
 
 /// AudioService — wraps sherpa_onnx offline STT with the record package.
 ///
@@ -136,6 +137,11 @@ class AudioService extends ChangeNotifier {
           'assets/models/tokens.txt', 'tokens.txt');
 
       debugPrint('[AudioService] Creating OnlineRecognizer...');
+
+      // Build hotwords context biasing config
+      final hotwordsList = MiningVocabulary.getHotwordsList();
+      debugPrint('[AudioService] Loaded ${hotwordsList.length} mining hotwords for context biasing');
+
       final config = sherpa_onnx.OnlineRecognizerConfig(
         model: sherpa_onnx.OnlineModelConfig(
           transducer: sherpa_onnx.OnlineTransducerModelConfig(
@@ -156,6 +162,9 @@ class AudioService extends ChangeNotifier {
         decodingMethod: 'greedy_search',
         maxActivePaths: 4,
         blankPenalty: 1.5, // Penalize blanks to reduce hallucinations on noise
+        // Mining vocabulary hotwords for context biasing
+        hotwords: hotwordsList.join('\n'),
+        hotwordsScore: 3.0, // Moderate boost (1.0-10.0 range typical)
       );
 
       _recognizer = sherpa_onnx.OnlineRecognizer(config);

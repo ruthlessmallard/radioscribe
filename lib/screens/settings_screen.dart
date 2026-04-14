@@ -284,6 +284,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4)),
                 ),
+                const SizedBox(height: 24),
+
+                // Debug Mode Toggle
+                const _SectionHeader(
+                  label: 'DEBUG MODE',
+                  color: AppColors.greyLight,
+                  subtitle: 'Show transcription corrections and context',
+                ),
+                SwitchListTile(
+                  value: _config.debugMode,
+                  onChanged: (v) =>
+                      _updateConfig(_config.copyWith(debugMode: v)),
+                  title: const Text('Enable debug view',
+                      style: TextStyle(color: AppColors.textNormal)),
+                  subtitle: const Text(
+                    'Display raw text, corrections, and context on segments',
+                    style: TextStyle(color: AppColors.greyLight, fontSize: 12),
+                  ),
+                  activeThumbColor: AppColors.catYellow,
+                  tileColor: AppColors.surface,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4)),
+                ),
                 const SizedBox(height: 32),
 
                 // Reset to defaults

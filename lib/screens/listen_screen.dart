@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/segment.dart';
 import '../services/keyword_service.dart';
+import '../services/llm_correction_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/audio_service.dart';
@@ -86,10 +87,12 @@ class _ListenScreenState extends State<ListenScreen> {
     final result = _keywordService.analyze(text);
     final segment = TranscriptSegment(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      text: text,
+      text: result.correctedText,
+      rawText: text,
       timestamp: DateTime.now(),
       alert: result.alert,
       matchedKeywords: result.matched,
+      corrections: _keywordService.lastCorrections.map((c) => c.toString()).toList(),
     );
 
     if (_settingsService.config.saveTranscriptLog) {
@@ -277,6 +280,7 @@ class _ListenScreenState extends State<ListenScreen> {
                               segment: seg,
                               onDismiss: () => _dismissSegment(seg),
                               showTimestamp: true,
+                              debugMode: _settingsService.config.debugMode,
                             )),
                         Container(height: 1, color: AppColors.grey),
                       ],
@@ -316,6 +320,7 @@ class _ListenScreenState extends State<ListenScreen> {
                         segment: _scrollingSegments[segIndex],
                         onDismiss: () {},
                         showTimestamp: false,
+                        debugMode: _settingsService.config.debugMode,
                       );
                     },
                   ),

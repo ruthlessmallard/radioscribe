@@ -12,6 +12,12 @@ class TranscriptSegment {
   final double confidence;
   bool isDismissed;
 
+  /// Raw transcription before LLM correction
+  final String? rawText;
+
+  /// List of corrections applied (for debugging/display)
+  final List<String> corrections;
+
   TranscriptSegment({
     required this.id,
     required this.text,
@@ -20,6 +26,8 @@ class TranscriptSegment {
     this.matchedKeywords = const [],
     this.confidence = 1.0,
     this.isDismissed = false,
+    this.rawText,
+    this.corrections = const [],
   });
 
   bool get isPinned => alert != SegmentAlert.none && !isDismissed;
@@ -61,15 +69,24 @@ class TranscriptSegment {
     }
   }
 
-  TranscriptSegment copyWith({bool? isDismissed}) {
+  TranscriptSegment copyWith({
+    bool? isDismissed,
+    String? text,
+    String? rawText,
+    List<String>? corrections,
+    SegmentAlert? alert,
+    List<String>? matchedKeywords,
+  }) {
     return TranscriptSegment(
       id: id,
-      text: text,
+      text: text ?? this.text,
       timestamp: timestamp,
-      alert: alert,
-      matchedKeywords: matchedKeywords,
+      alert: alert ?? this.alert,
+      matchedKeywords: matchedKeywords ?? this.matchedKeywords,
       confidence: confidence,
       isDismissed: isDismissed ?? this.isDismissed,
+      rawText: rawText ?? this.rawText,
+      corrections: corrections ?? this.corrections,
     );
   }
 }
