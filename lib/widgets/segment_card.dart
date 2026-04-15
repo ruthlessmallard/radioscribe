@@ -99,7 +99,7 @@ class SegmentCard extends StatelessWidget {
               ),
             ),
             // Debug info: raw text, corrections, context
-            if (debugMode && _hasDebugInfo) ...[
+            if (debugMode) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -110,32 +110,33 @@ class SegmentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (segment.rawText != null && segment.rawText != segment.text) ...[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'RAW: ',
+                    // Always show raw text in debug mode
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'RAW: ',
+                          style: TextStyle(
+                            color: AppColors.greyLight,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            segment.rawText ?? '(null)',
                             style: TextStyle(
                               color: AppColors.greyLight,
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              decoration: segment.rawText != segment.text
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              segment.rawText!,
-                              style: const TextStyle(
-                                color: AppColors.greyLight,
-                                fontSize: 10,
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                    ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     if (segment.corrections.isNotEmpty) ...[
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

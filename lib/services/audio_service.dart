@@ -49,8 +49,9 @@ class AudioService extends ChangeNotifier {
 
   // Energy gate threshold (RMS amplitude below this = silence/noise)
   // Tuned for 16kHz PCM normalized to [-1.0, 1.0]
-  static const double _energyGateThreshold = 0.015;
-  static const int _minConsecutiveSilentFrames = 3; // ~60ms at typical chunk sizes
+  // INCREASED: was 0.015 - too aggressive, caused gibberish
+  static const double _energyGateThreshold = 0.008;
+  static const int _minConsecutiveSilentFrames = 5; // ~100ms at typical chunk sizes
 
   // ── Internals ─────────────────────────────────────────────────────────────
   final StreamController<String> _segmentController =
@@ -270,20 +271,9 @@ class AudioService extends ChangeNotifier {
       // Apply 300-3400Hz bandpass filter before STT
       samplesFloat32 = _applyBandpassFilter(samplesFloat32);
 
-      // Energy gate: skip very low-energy frames to reduce noise hallucinations
-      if (_isEnergyBelowThreshold(samplesFloat32)) {
-        _consecutiveSilentFrames++;
-        // After several silent frames, still feed minimal zeroes to keep stream alive
-        // but don't process recognition to save CPU
-        if (_consecutiveSilentFrames > _minConsecutiveSilentFrames) {
-          // Feed zeroes to indicate silence to the recognizer
-          final silence = Float32List(samplesFloat32.length);
-          _onlineStream!.acceptWaveform(samples: silence, sampleRate: _sampleRate);
-          return;
-        }
-      } else {
-        _consecutiveSilentFrames = 0;
-      }
+      // NOTE: Energy gate disabled - was causing gibberish by zeroing speech frames
+      // Bandpass filter provides sufficient noise reduction
+      // _consecutiveSilentFrames logic preserved but unused
 
       _onlineStream!.acceptWaveform(
           samples: samplesFloat32, sampleRate: _sampleRate);
