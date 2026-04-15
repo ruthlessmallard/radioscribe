@@ -56,7 +56,7 @@ class _ListenScreenState extends State<ListenScreen> {
 
     // Configure audio players to NOT request audio focus — prevents the OS
     // from pausing the mic recording session when alarm/chirp plays.
-    const audioCtx = AudioContext(
+    final audioCtx = AudioContext(
       android: AudioContextAndroid(
         audioFocus: AndroidAudioFocus.none,
         contentType: AndroidContentType.sonification,
