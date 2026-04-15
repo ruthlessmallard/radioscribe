@@ -38,9 +38,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  AudioContext get _audioCtx => AudioContext(
+  AudioContext get _alarmTestCtx => AudioContext(
     android: AudioContextAndroid(
-      audioFocus: AndroidAudioFocus.none,
+      audioFocus: AndroidAudioFocus.gainTransientMayDuck,
       contentType: AndroidContentType.sonification,
       usageType: AndroidUsageType.alarm,
       isSpeakerphoneOn: false,
@@ -48,9 +48,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   );
 
+  AudioContext get _chirpTestCtx => AudioContext(
+    android: AudioContextAndroid(
+      audioFocus: AndroidAudioFocus.none,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.notification,
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+    ),
+  );
+
   Future<void> _testAlarm() async {
     try {
-      await _testPlayer.setAudioContext(_audioCtx);
+      await _testPlayer.setAudioContext(_alarmTestCtx);
       await _testPlayer.stop();
       await _testPlayer.play(AssetSource('sounds/alarm.mp3'));
     } catch (_) {}
@@ -58,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _testChirp() async {
     try {
-      await _testPlayer.setAudioContext(_audioCtx);
+      await _testPlayer.setAudioContext(_chirpTestCtx);
       await _testPlayer.stop();
       await _testPlayer.play(AssetSource('sounds/chirp.mp3'));
     } catch (_) {}
