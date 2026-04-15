@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/segment.dart';
 import '../services/keyword_service.dart';
-import '../services/llm_correction_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/audio_service.dart';
@@ -57,7 +56,7 @@ class _ListenScreenState extends State<ListenScreen> {
 
     // Configure audio players to NOT request audio focus — prevents the OS
     // from pausing the mic recording session when alarm/chirp plays.
-    final audioCtx = AudioContext(
+    const audioCtx = AudioContext(
       android: AudioContextAndroid(
         audioFocus: AndroidAudioFocus.none,
         contentType: AndroidContentType.sonification,

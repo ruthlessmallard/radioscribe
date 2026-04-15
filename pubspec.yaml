@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   permission_handler: ^11.3.0
   record: ^6.2.0
-  sherpa_onnx: ^1.12.28
+  sherpa_onnx: ^1.12.36
   path: ^1.9.0
   shared_preferences: ^2.3.2
   path_provider: ^2.1.4
@@ -33,6 +33,7 @@ flutter:
     - assets/models/decoder.onnx
     - assets/models/joiner.onnx
     - assets/models/tokens.txt
+    - assets/models/hotwords.txt
     - assets/sounds/alarm.mp3
     - assets/sounds/chirp.mp3
     - assets/icon.png

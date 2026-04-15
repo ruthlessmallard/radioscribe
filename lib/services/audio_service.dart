@@ -9,7 +9,6 @@ import 'package:path/path.dart' as p;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:io';
-import 'mining_vocabulary.dart';
 
 /// AudioService — wraps sherpa_onnx offline STT with the record package.
 ///
@@ -46,9 +45,7 @@ class AudioService extends ChangeNotifier {
   static const int _sampleRate = 16000;
   static const Duration _maxSegmentDuration = Duration(seconds: 60);
 
-  // Bandpass filter settings (radio frequency range)
-  static const double _lowCutoffHz = 300.0;
-  static const double _highCutoffHz = 3400.0;
+  // Bandpass filter constants embedded in _applyBandpassFilter
 
   // Energy gate threshold (RMS amplitude below this = silence/noise)
   // Tuned for 16kHz PCM normalized to [-1.0, 1.0]
@@ -138,9 +135,10 @@ class AudioService extends ChangeNotifier {
 
       debugPrint('[AudioService] Creating OnlineRecognizer...');
 
-      // Build hotwords context biasing config
-      final hotwordsList = MiningVocabulary.getHotwordsList();
-      debugPrint('[AudioService] Loaded ${hotwordsList.length} mining hotwords for context biasing');
+      // Copy hotwords file from assets
+      final hotwordsPath = await _copyAssetFile(
+          'assets/models/hotwords.txt', 'hotwords.txt');
+      debugPrint('[AudioService] Loaded mining hotwords for context biasing');
 
       final config = sherpa_onnx.OnlineRecognizerConfig(
         model: sherpa_onnx.OnlineModelConfig(
@@ -163,8 +161,8 @@ class AudioService extends ChangeNotifier {
         maxActivePaths: 4,
         blankPenalty: 1.5, // Penalize blanks to reduce hallucinations on noise
         // Mining vocabulary hotwords for context biasing
-        hotwords: hotwordsList.join('\n'),
-        hotwordsScore: 3.0, // Moderate boost (1.0-10.0 range typical)
+        hotwordsFile: hotwordsPath,
+        hotwordsScore: 3.0, // Moderate boost (default 1.5)
       );
 
       _recognizer = sherpa_onnx.OnlineRecognizer(config);

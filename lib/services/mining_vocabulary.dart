@@ -5,6 +5,7 @@
 ///
 /// Source: Common underground mining terminology, equipment names, and
 /// safety protocols used in hard rock and coal mining operations.
+library;
 
 class MiningVocabulary {
   /// Hotwords with boost scores for Sherpa context biasing.
@@ -313,10 +314,10 @@ class MiningVocabulary {
 
     for (final prefix in negationPrefixes) {
       // Check for "no fire", "not injured", etc.
-      if (lower.contains(prefix + keywordLower)) return true;
+      if (lower.contains('$prefix$keywordLower')) return true;
       // Check for "fire: no", "injured: negative", etc.
-      if (lower.contains(keywordLower + ': no')) return true;
-      if (lower.contains(keywordLower + ': negative')) return true;
+      if (lower.contains('$keywordLower: no')) return true;
+      if (lower.contains('$keywordLower: negative')) return true;
     }
     return false;
   }

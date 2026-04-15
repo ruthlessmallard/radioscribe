@@ -1,0 +1,69 @@
+# Mining vocabulary hotwords for Sherpa ONNX context biasing
+# Format: word boosting_score
+# Lines starting with # are ignored
+
+# Equipment and machinery (high priority)
+jumbo 8.0
+bolter 8.0
+scooptram 8.0
+LHD 8.0
+mucker 7.0
+longhole 8.0
+stoper 8.0
+jackleg 8.0
+raise_climber 8.0
+alimak 8.0
+headframe 8.0
+stope 8.0
+drift 7.0
+crosscut 7.0
+sublevel 7.0
+ore_pass 7.0
+waste_pass 7.0
+grizzly 7.0
+vent_bag 7.0
+
+# Mining operations
+mucking 7.0
+blasting 7.0
+backfill 7.0
+paste_fill 7.0
+shotcrete 7.0
+cut_and_fill 7.0
+longhole_stoping 8.0
+sublevel_stoping 8.0
+block_caving 7.0
+panel_caving 7.0
+ground_support 7.0
+
+# Hazards and safety (highest priority)
+methane 9.0
+firedamp 8.0
+blackdamp 8.0
+afterdamp 8.0
+stinkdamp 8.0
+carbon_monoxide 9.0
+hydrogen_sulfide 9.0
+mayday 10.0
+evactuate 9.0
+code_red 9.0
+code_blue 9.0
+rockburst 8.0
+seismic 7.0
+mud_rush 8.0
+water_inrush 8.0
+inundation 8.0
+spontaneous_combustion 9.0
+
+# Personnel
+shift_boss 7.0
+mine_captain 7.0
+mucker_operator 7.0
+powderman 7.0
+hoistman 7.0
+cage_tender 7.0
+skip_tender 7.0
+
+# Emergency phrases
+all_clear 7.0
+pan_pan 9.0

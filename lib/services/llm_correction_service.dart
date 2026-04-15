@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 /// LLM Correction Service — post-processes Sherpa output with mining context.
 ///
 /// Uses a lightweight rule-based approach suitable for on-device operation.
@@ -5,8 +7,6 @@
 ///
 /// Maintains rolling context (3-4 segments) to resolve ambiguous words
 /// based on surrounding conversation.
-
-import 'dart:collection';
 import 'mining_vocabulary.dart';
 
 class LlmCorrectionService {
