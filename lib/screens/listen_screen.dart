@@ -54,19 +54,28 @@ class _ListenScreenState extends State<ListenScreen> {
       await _logService.startSession();
     }
 
-    // Configure audio players to NOT request audio focus — prevents the OS
-    // from pausing the mic recording session when alarm/chirp plays.
-    final audioCtx = AudioContext(
+    // Configure audio players for transient focus during alerts only
+    // Alarm uses transient focus (ducks other audio), chirp uses none (mixes)
+    final alarmCtx = AudioContext(
       android: AudioContextAndroid(
-        audioFocus: AndroidAudioFocus.none,
+        audioFocus: AndroidAudioFocus.gainTransientMayDuck,
         contentType: AndroidContentType.sonification,
         usageType: AndroidUsageType.alarm,
         isSpeakerphoneOn: false,
         stayAwake: false,
       ),
     );
-    await _alarmPlayer.setAudioContext(audioCtx);
-    await _chirpPlayer.setAudioContext(audioCtx);
+    final chirpCtx = AudioContext(
+      android: AudioContextAndroid(
+        audioFocus: AndroidAudioFocus.none, // Chirp mixes with other audio
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.notification,
+        isSpeakerphoneOn: false,
+        stayAwake: false,
+      ),
+    );
+    await _alarmPlayer.setAudioContext(alarmCtx);
+    await _chirpPlayer.setAudioContext(chirpCtx);
 
     _segmentSub = _audioService.segmentStream.listen(_onSegment);
 
