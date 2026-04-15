@@ -50,6 +50,9 @@ class _ListenScreenState extends State<ListenScreen> {
     _settingsService = await SettingsService.getInstance();
     _keywordService = KeywordService(_settingsService.config);
 
+    // Pass energy gate threshold to audio service
+    _audioService.energyGateThreshold = _settingsService.config.energyGateThreshold;
+
     if (_settingsService.config.saveTranscriptLog) {
       await _logService.startSession();
     }

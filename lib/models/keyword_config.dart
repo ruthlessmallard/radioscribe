@@ -10,6 +10,7 @@ class KeywordConfig {
   final bool enableAlarmSound;
   final bool enableChirpSound;
   final bool debugMode;
+  final double energyGateThreshold; // 0 = disabled
 
   const KeywordConfig({
     this.warningKeywords = const [],
@@ -23,6 +24,7 @@ class KeywordConfig {
     this.enableAlarmSound = true,
     this.enableChirpSound = true,
     this.debugMode = false,
+    this.energyGateThreshold = 0.0, // disabled by default
   });
 
   static KeywordConfig get defaults => const KeywordConfig(
@@ -129,6 +131,7 @@ class KeywordConfig {
         maxSegmentMs: 60000,
         saveTranscriptLog: false,
         debugMode: false,
+        energyGateThreshold: 0.0,
       );
 
   KeywordConfig copyWith({
@@ -143,6 +146,7 @@ class KeywordConfig {
     bool? enableAlarmSound,
     bool? enableChirpSound,
     bool? debugMode,
+    double? energyGateThreshold,
   }) {
     return KeywordConfig(
       warningKeywords: warningKeywords ?? this.warningKeywords,
@@ -156,6 +160,7 @@ class KeywordConfig {
       enableAlarmSound: enableAlarmSound ?? this.enableAlarmSound,
       enableChirpSound: enableChirpSound ?? this.enableChirpSound,
       debugMode: debugMode ?? this.debugMode,
+      energyGateThreshold: energyGateThreshold ?? this.energyGateThreshold,
     );
   }
 
@@ -171,6 +176,7 @@ class KeywordConfig {
         'enableAlarmSound': enableAlarmSound,
         'enableChirpSound': enableChirpSound,
         'debugMode': debugMode,
+        'energyGateThreshold': energyGateThreshold,
       };
 
   factory KeywordConfig.fromJson(Map<String, dynamic> json) => KeywordConfig(
@@ -187,5 +193,6 @@ class KeywordConfig {
         enableAlarmSound: json['enableAlarmSound'] ?? true,
         enableChirpSound: json['enableChirpSound'] ?? true,
         debugMode: json['debugMode'] ?? false,
+        energyGateThreshold: (json['energyGateThreshold'] as num?)?.toDouble() ?? 0.0,
       );
 }

@@ -263,6 +263,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // Energy Gate Threshold
+                const _SectionHeader(
+                  label: 'NOISE FILTER',
+                  color: AppColors.greyLight,
+                  subtitle: 'Energy gate threshold (0 = disabled)',
+                ),
+                _SliderSetting(
+                  value: _config.energyGateThreshold,
+                  min: 0.0,
+                  max: 0.03,
+                  divisions: 6,
+                  label: _config.energyGateThreshold == 0
+                      ? 'OFF'
+                      : _config.energyGateThreshold.toStringAsFixed(3),
+                  onChanged: (v) => _updateConfig(
+                      _config.copyWith(energyGateThreshold: v)),
+                ),
+                const SizedBox(height: 24),
+
                 // Transcript Log Toggle
                 const _SectionHeader(
                   label: 'TRANSCRIPT LOG',

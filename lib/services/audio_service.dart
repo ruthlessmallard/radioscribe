@@ -47,11 +47,17 @@ class AudioService extends ChangeNotifier {
 
   // Bandpass filter constants embedded in _applyBandpassFilter
 
-  // Energy gate threshold (RMS amplitude below this = silence/noise)
-  // Tuned for 16kHz PCM normalized to [-1.0, 1.0]
-  // INCREASED: was 0.015 - too aggressive, caused gibberish
-  static const double _energyGateThreshold = 0.008;
+  // Energy gate configuration - set via SettingsService
+  double _energyGateThreshold = 0.0; // 0 = disabled by default
   static const int _minConsecutiveSilentFrames = 5; // ~100ms at typical chunk sizes
+
+  /// Update energy gate threshold from settings (0 = disabled)
+  set energyGateThreshold(double value) {
+    _energyGateThreshold = value;
+  }
+
+  /// Get current energy gate threshold
+  double get energyGateThreshold => _energyGateThreshold;
 
   // ── Internals ─────────────────────────────────────────────────────────────
   final StreamController<String> _segmentController =
@@ -271,9 +277,18 @@ class AudioService extends ChangeNotifier {
       // Apply 300-3400Hz bandpass filter before STT
       samplesFloat32 = _applyBandpassFilter(samplesFloat32);
 
-      // NOTE: Energy gate disabled - was causing gibberish by zeroing speech frames
-      // Bandpass filter provides sufficient noise reduction
-      // _consecutiveSilentFrames logic preserved but unused
+      // Energy gate: optional noise filtering based on settings
+      if (_energyGateThreshold > 0 && _isEnergyBelowThreshold(samplesFloat32, _energyGateThreshold)) {
+        _consecutiveSilentFrames++;
+        if (_consecutiveSilentFrames > _minConsecutiveSilentFrames) {
+          // Feed zeroes to indicate silence to the recognizer
+          final silence = Float32List(samplesFloat32.length);
+          _onlineStream!.acceptWaveform(samples: silence, sampleRate: _sampleRate);
+          return;
+        }
+      } else {
+        _consecutiveSilentFrames = 0;
+      }
 
       _onlineStream!.acceptWaveform(
           samples: samplesFloat32, sampleRate: _sampleRate);
@@ -384,14 +399,14 @@ class AudioService extends ChangeNotifier {
   }
 
   /// Check if frame energy (RMS) is below threshold indicating silence/noise.
-  bool _isEnergyBelowThreshold(Float32List samples) {
+  bool _isEnergyBelowThreshold(Float32List samples, double threshold) {
     if (samples.isEmpty) return true;
     double sumSquares = 0.0;
     for (final s in samples) {
       sumSquares += s * s;
     }
     final rms = math.sqrt(sumSquares / samples.length);
-    return rms < _energyGateThreshold;
+    return rms < threshold;
   }
 
   // ── Dispose ───────────────────────────────────────────────────────────────
