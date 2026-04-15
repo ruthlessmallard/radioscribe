@@ -135,10 +135,9 @@ class AudioService extends ChangeNotifier {
 
       debugPrint('[AudioService] Creating OnlineRecognizer...');
 
-      // Copy hotwords file from assets
-      final hotwordsPath = await _copyAssetFile(
-          'assets/models/hotwords.txt', 'hotwords.txt');
-      debugPrint('[AudioService] Loaded mining hotwords for context biasing');
+      // NOTE: hotwords context biasing disabled - causes init failure in 1.12.36
+      // Post-processing via LlmCorrectionService handles mining term correction
+      // TODO: Re-enable after Sherpa ONNX hotwords stabilizes
 
       final config = sherpa_onnx.OnlineRecognizerConfig(
         model: sherpa_onnx.OnlineModelConfig(
@@ -160,9 +159,6 @@ class AudioService extends ChangeNotifier {
         decodingMethod: 'greedy_search',
         maxActivePaths: 4,
         blankPenalty: 1.5, // Penalize blanks to reduce hallucinations on noise
-        // Mining vocabulary hotwords for context biasing
-        hotwordsFile: hotwordsPath,
-        hotwordsScore: 3.0, // Moderate boost (default 1.5)
       );
 
       _recognizer = sherpa_onnx.OnlineRecognizer(config);
