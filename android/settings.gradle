@@ -19,4 +19,7 @@ pluginManagement {
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "9.0.1" apply false
-    id "org.j™]œ˜Z[œËšÛİ[‹˜[™›ÚYˆ™\œÚ[ÛˆŒ‹Œ‹ŒŒˆ\H˜[ÙBŸB‚š[˜ÛYH˜\‚
+    id "org.jetbrains.kotlin.android" version "2.2.20" apply false
+}
+
+include ":app"
